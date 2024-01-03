@@ -1,0 +1,80 @@
+from pydantic import BaseModel, HttpUrl
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+
+class AnalysisRequest(BaseModel):
+    repo: str
+    ref: str = "main"
+    options: Dict[str, Any] = {}
+
+class FileNode(BaseModel):
+    path: str
+    type: str  # blob, tree
+    size: Optional[int] = None
+    sha: Optional[str] = None
+
+class DependencyGraph(BaseModel):
+    nodes: List[Dict[str, Any]]
+    edges: List[Dict[str, Any]]
+
+class FunctionInfo(BaseModel):
+    file: str
+    name: str
+    signature: str
+    notes: Optional[str] = None
+
+class PullRequest(BaseModel):
+    number: int
+    title: str
+    html_url: HttpUrl
+    state: str
+    user: Dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+    body: Optional[str] = None
+    labels: List[Dict[str, Any]] = []
+    comments_count: int = 0
+    review_comments_count: int = 0
+
+class AnalysisResult(BaseModel):
+    repo: str
+    metadata: Dict[str, Any]
+    default_branch: str
+    file_tree: List[FileNode]
+    manifests: Dict[str, str]
+    samples: Dict[str, str]
+    dependency_graph: DependencyGraph
+    top_functions: List[FunctionInfo]
+    open_issues: List[Dict[str, Any]]
+    pull_requests: List[PullRequest] = []
+    discussions: List[Dict[str, Any]]
+    contributors: List[Dict[str, Any]]
+    # Enhanced fields
+    # Enhanced fields matching requirements
+    project_summary: Optional[Dict[str, str]] = None # {one_liner, audience, maturity}
+    architecture_overview: Optional[Dict[str, Any]] = None # {narrative, components}
+    architecture_diagram_mermaid: Optional[str] = None
+    architecture_diagram_plantuml: Optional[str] = None
+    folder_structure: Optional[List[Dict[str, Any]]] = None
+    core_components_and_functions: Optional[List[Dict[str, Any]]] = None
+    tech_stack_detected: Optional[Dict[str, Any]] = None
+    development_workflow: Optional[Dict[str, Any]] = None # {setup_commands, run_local, etc}
+    issue_analysis_and_recommendations: Optional[Dict[str, Any]] = None
+    firstpr_onboarding_roadmap: Optional[Dict[str, List[str]]] = None
+    frequently_asked_questions: Optional[List[Dict[str, str]]] = None
+    missing_docs_and_improvements: Optional[List[str]] = None
+    social_links: Optional[List[Dict[str, str]]] = None
+    
+    # Internal/Legacy
+    plantuml_diagram: Optional[str] = None # Deprecated in favor of architecture_diagram_mermaid
+    rate_limit_remaining: Optional[int] = None
+    rate_limit_reset: Optional[str] = None
+
+
+
+class JobStatus(BaseModel):
+    job_id: str
+    status: str # pending, processing, completed, failed
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+    error: Optional[str] = None
