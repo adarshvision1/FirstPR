@@ -15,7 +15,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy backend requirements and install dependencies
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Disable pip hash checking explicitly
+ENV PIP_NO_REQUIRE_HASHES=1
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the backend application
 COPY backend/ .
