@@ -26,5 +26,5 @@ COPY backend/ .
 # Expose port
 EXPOSE 8080
 
-# Run the application using Python entrypoint
-CMD ["python", "run.py"]
+# Run the application with fixed port
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]
