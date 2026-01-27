@@ -23,9 +23,12 @@ RUN pip install --upgrade pip && \
 # Copy the backend application
 COPY backend/ .
 
+# Copy startup script
+COPY backend/start.sh .
+RUN chmod +x start.sh
+
 # Expose port
 EXPOSE 8080
 
-# Run the application with uvicorn
-# Use PORT environment variable for Railway compatibility
-CMD ["sh", "-c", "uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+# Run the application using startup script
+CMD ["./start.sh"]
