@@ -288,14 +288,19 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
                 f"{self.base_url}/search/issues",
                 token=token,
                 params={
-                    "q": f"repo:{owner}/{repo} type:discussion",
-                    "sort": "interactions",  # Interactions = reactions + comments
+                    "q": f"repo:{owner}/{repo} is:issue", # type:discussion is not supported in REST Search API
+                    "sort": "interactions",
                     "order": "desc",
-                    "per_page": 5,  # We only need top ones
+                    "per_page": 5,
                 },
             )
             data = resp.json()
             return data.get("items", [])
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 422:
+                logger.warning(f"Search API returned 422 for discussions quest on {owner}/{repo}. Returning empty list.")
+                return []
+            raise
         except Exception as e:
             logger.warning(f"Failed to fetch discussions: {e}")
             return []
