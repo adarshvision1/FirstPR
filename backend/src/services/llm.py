@@ -9,8 +9,8 @@ from ..core.config import settings
 class GeminiService:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
-            self.client = genai.Client(api_key=settings.GOOGLE_API_KEY, vertexai=False)
-            self.model_name = "gemini-3-pro-preview"
+            self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+            self.model_name = "gemini-2.0-flash-thinking-exp-01-21"
         else:
             self.client = None
             self.model_name = None
@@ -136,11 +136,16 @@ class GeminiService:
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
-                    thinking_config=types.ThinkingConfig(thinking_level="high")
+                    thinking_config=types.ThinkingConfig(include_thoughts=True)
                 )
             )
             
             text = response.text.strip()
+            # Handle potential markdown code blocks in thinking model output
+            if text.startswith("```json"):
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif text.startswith("```"):
+                text = text.split("```")[1].split("```")[0].strip()
             # Clean up markdown code blocks if present (though response_mime_type should handle it)
             if text.startswith("```json"):
                 text = text[7:]
@@ -203,7 +208,7 @@ class GeminiService:
                 model=self.model_name,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    thinking_config=types.ThinkingConfig(thinking_level="high")
+                    thinking_config=types.ThinkingConfig(include_thoughts=True)
                 )
             )
             return response.text
