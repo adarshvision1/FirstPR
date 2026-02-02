@@ -10,7 +10,7 @@ class GeminiService:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
             self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-            self.model_name = "gemini-2.0-flash" # Defaulting to a stable 2.0 version
+            self.model_name = "gemini-3-pro-preview"
         else:
             self.client = None
             self.model_name = None
@@ -56,7 +56,7 @@ class GeminiService:
             "firstpr_onboarding_roadmap": {{ "day0": ["..."], "day1": ["..."], "day2_3": ["..."], "day4_7": ["..."] }},
             "social_links": [ {{ "platform": "Discord/Twitter/etc", "url": "..." }} ],
             "frequently_asked_questions": [ {{ "question": "...", "answer": "..." }} ],
-            "missing_docs_and_improvements": ["..."]
+            "missing_docs_and_improvements": ["..." ]
         }}
         
         Ensure 'architecture_diagram_mermaid' is a valid MermaidJS string.
@@ -73,8 +73,6 @@ class GeminiService:
                 ]
             )
             
-            # The new SDK is synchronous by default, but we can use run_in_executor if needed.
-            # However, for now let's use the provided content generation.
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=prompt,
@@ -88,9 +86,9 @@ class GeminiService:
             
             # Clean up markdown code blocks if present
             if "```json" in text:
-                text = text.split("```json")[1].split("```")[0].strip()
+                text = text.split("```json")[1].split("```\n")[0].strip()
             elif "```" in text:
-                text = text.split("```")[1].split("```")[0].strip()
+                text = text.split("```\n")[1].split("```\n")[0].strip()
 
             import json
             try:
