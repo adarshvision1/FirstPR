@@ -99,3 +99,6 @@ class ChatService:
         except Exception as e:
             print(f"DEBUG: Chat Error: {str(e)}")
             return {"answer": f"I encountered an error while thinking: {str(e)}"}
+
+
+chat_service = ChatService()
