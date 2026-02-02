@@ -1,6 +1,7 @@
 from typing import Any
-
-import google.generativeai as genai
+import asyncio
+from google import genai
+from google.genai import types
 
 from ..core.config import settings
 
@@ -8,13 +9,14 @@ from ..core.config import settings
 class GeminiService:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
-            self.model = genai.GenerativeModel("gemini-3-pro-preview")
+            self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+            self.model_name = "gemini-2.0-flash" # Defaulting to a stable 2.0 version
         else:
-            self.model = None
+            self.client = None
+            self.model_name = None
 
     async def generate_analysis(self, bundle: dict[str, Any]) -> dict[str, Any]:
-        if not self.model:
+        if not self.client:
             return {"error": "LLM API Key not configured"}
 
         # context optimization: limit top functions and file tree size
@@ -62,16 +64,21 @@ class GeminiService:
 
         try:
             # Add safety settings to reduce likelihood of blocked responses
-            safety_settings = [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-            ]
+            config = types.GenerateContentConfig(
+                safety_settings=[
+                    types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
+                ]
+            )
             
-            response = await self.model.generate_content_async(
-                prompt,
-                safety_settings=safety_settings
+            # The new SDK is synchronous by default, but we can use run_in_executor if needed.
+            # However, for now let's use the provided content generation.
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=config
             )
             
             if not response.text:
@@ -118,7 +125,7 @@ class GeminiService:
             return {"error": str(e)}
 
     async def explain_file(self, code: str, path: str, context: dict[str, Any]) -> str:
-        if not self.model:
+        if not self.client:
             return "Error: LLM API Key not configured."
 
         repo_name = context.get("repo", "Unknown")
@@ -143,7 +150,10 @@ class GeminiService:
         """
 
         try:
-            response = await self.model.generate_content_async(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             return response.text
         except Exception as e:
             return f"Failed to explain file: {str(e)}"
