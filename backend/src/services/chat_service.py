@@ -1,4 +1,5 @@
 from google import genai
+from google.genai import types
 from ..core.config import settings
 from typing import List, Dict, Any
 
@@ -84,22 +85,44 @@ class ChatService:
         try:
             print("DEBUG: Sending prompt to LLM...")
             
-            # The new SDK handles system instruction via config or preamble
-            # For simplicity, we'll use a preamble-like approach or start_chat
+            # Format conversation history into the prompt
+            conversation_context = ""
+            if chat_history:
+                conversation_context = "\n\n## Previous Conversation:\n"
+                for msg in chat_history:
+                    role_label = "User" if msg["role"] == "user" else "Assistant"
+                    conversation_context += f"{role_label}: {msg['parts'][0]['text']}\n"
             
-            chat_session = self.client.chats.create(
-                model=self.model_name,
-                history=chat_history,
-                config={"system_instruction": system_prompt}
+            # Combine system prompt with conversation history
+            full_prompt = system_prompt + conversation_context
+            
+            # Add safety settings like the LLM service
+            config = types.GenerateContentConfig(
+                safety_settings=[
+                    types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
+                ]
             )
             
-            response = chat_session.send_message(message)
+            # Use the correct API method
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=full_prompt,
+                config=config
+            )
+            
+            if not response.text:
+                return {"answer": "I received an empty response. Please try again."}
             
             print("DEBUG: LLM Response received")
             return {"answer": response.text}
 
         except Exception as e:
             print(f"DEBUG: Chat Error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return {"answer": f"I encountered an error while thinking: {str(e)}"}
 
 
