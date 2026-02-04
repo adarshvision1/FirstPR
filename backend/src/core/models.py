@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pydantic import BaseModel, HttpUrl
 from typing import List, Optional, Dict, Any
 from datetime import datetime
@@ -59,10 +61,7 @@ class AnalysisResult(BaseModel):
     frequently_asked_questions: Optional[List[Dict[str, str]]] = None
     missing_docs_and_improvements: Optional[List[str]] = None
 
-    # Internal/Legacy
-    plantuml_diagram: Optional[str] = (
-        None  # Deprecated in favor of architecture_diagram_mermaid
-    )
+    # Internal
     rate_limit_remaining: Optional[int] = None
     rate_limit_reset: Optional[str] = None
 
@@ -79,4 +78,11 @@ class ChatRequest(BaseModel):
     repo_url: str
     message: str
     history: List[Dict[str, str]] = []
+
+
+class ExplainFileRequest(BaseModel):
+    """Request model for file explanation endpoint"""
+    repo: str
+    path: str
+    content: str | None = None
     context: Optional[Dict[str, Any]] = {}

@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,14 +9,23 @@ from .core.concurrency import ConcurrencyManager
 from .core.config import settings
 from .core.network import HTTPClient
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    logger.info("Starting FirstPR API...")
     HTTPClient.init()
     ConcurrencyManager.init()
     yield
     # Shutdown
+    logger.info("Shutting down FirstPR API...")
     await HTTPClient.close()
     ConcurrencyManager.shutdown()
 
@@ -27,10 +37,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Parse CORS origins from settings
+cors_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",")]
+logger.info(f"CORS enabled for origins: {cors_origins}")
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development simplicity
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
