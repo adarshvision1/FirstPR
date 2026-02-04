@@ -1,6 +1,5 @@
-from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, List
-import statistics
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 
 class ActivityAnalyzer:
@@ -9,15 +8,15 @@ class ActivityAnalyzer:
 
     def calculate_activity_status(
         self,
-        repo_data: Dict[str, Any],
-        commits: List[Dict[str, Any]],
-        issues: List[Dict[str, Any]],
-        prs: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        repo_data: dict[str, Any],
+        commits: list[dict[str, Any]],
+        issues: list[dict[str, Any]],
+        prs: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Analyzes repository activity and returns a status + explanation.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # 1. Analyze Commits
         last_commit_date = None

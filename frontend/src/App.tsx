@@ -47,7 +47,7 @@ function App() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
                   </span>
-                  Powered by Gemini 3 Pro
+                  Powered by Gemini
                 </div>
 
                 <h1 className="text-6xl md:text-8xl font-black text-[#e6edf3] tracking-tighter mb-8 leading-none drop-shadow-sm">
