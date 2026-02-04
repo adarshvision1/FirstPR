@@ -1,12 +1,10 @@
 import asyncio
 import logging
-import traceback
 from datetime import datetime
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 from fastapi.responses import ORJSONResponse
-from pydantic import BaseModel
 
 from ..core.models import (
     AnalysisRequest,
