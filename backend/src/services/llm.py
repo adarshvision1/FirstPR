@@ -1,9 +1,19 @@
+import asyncio
+import json
+import logging
+import re
 from typing import Any
 
 from google import genai
 from google.genai import types
 
 from ..core.config import settings
+
+# Constants for retry logic
+MAX_RETRIES = 3
+BASE_DELAY = 2
+
+logger = logging.getLogger(__name__)
 
 
 class GeminiService:
@@ -14,6 +24,49 @@ class GeminiService:
         else:
             self.client = None
             self.model_name = None
+
+    def _is_rate_limit_error(self, error: Exception) -> bool:
+        """Check if an exception is a rate limit error."""
+        error_str = str(error).lower()
+        rate_limit_keywords = [
+            "resource_exhausted",
+            "429",
+            "rate limit",
+            "quota",
+            "too many requests",
+        ]
+        return any(keyword in error_str for keyword in rate_limit_keywords)
+
+    async def _generate_with_retry(self, prompt: str, config: types.GenerateContentConfig) -> Any:
+        """Generate content with retry logic and exponential backoff."""
+        last_exception = None
+        
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=prompt,
+                    config=config
+                )
+                return response
+            except Exception as e:
+                last_exception = e
+                if self._is_rate_limit_error(e):
+                    if attempt < MAX_RETRIES - 1:
+                        delay = BASE_DELAY * (2 ** attempt)
+                        logger.warning(
+                            f"Rate limit hit on attempt {attempt + 1}/{MAX_RETRIES}. "
+                            f"Retrying in {delay}s..."
+                        )
+                        await asyncio.sleep(delay)
+                    else:
+                        logger.error(f"Rate limit hit after {MAX_RETRIES} attempts")
+                else:
+                    # For non-rate-limit errors, raise immediately
+                    raise
+        
+        # If we get here, all retries were exhausted
+        raise last_exception
 
     async def generate_analysis(self, bundle: dict[str, Any]) -> dict[str, Any]:
         if not self.client:
@@ -73,11 +126,8 @@ class GeminiService:
                 ]
             )
             
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-                config=config
-            )
+            # Use retry logic for API calls
+            response = await self._generate_with_retry(prompt, config)
             
             if not response.text:
                  return {"error": "Empty response from LLM"}
@@ -90,7 +140,6 @@ class GeminiService:
             elif "```" in text:
                 text = text.split("```\n")[1].split("```\n")[0].strip()
 
-            import json
             try:
                 result = json.loads(text)
 
@@ -104,7 +153,6 @@ class GeminiService:
                 return result
             except json.JSONDecodeError as je:
                 # Try to find JSON within the text if the above fails
-                import re
                 json_match = re.search(r'(\{.*\})', text, re.DOTALL)
                 if json_match:
                     try:
@@ -112,15 +160,17 @@ class GeminiService:
                     except:
                         pass
                 
-                print(f"JSON Decode Error: {je}. Raw text snippet: {text[:100]}...")
+                logger.error(f"JSON Decode Error: {je}. Raw text snippet: {text[:100]}...")
                 return {"error": "Failed to parse LLM response as JSON", "raw": text[:500]}
 
         except Exception as e:
-            with open("llm_debug.log", "a") as f:
-                import datetime
-                f.write(f"[{datetime.datetime.now()}] Error: {str(e)}\n")
-            print(f"LLM Generation failed: {e}")
-            return {"error": str(e)}
+            logger.error(f"LLM Generation failed: {e}")
+            
+            # Check if it's a rate limit error and provide user-friendly message
+            if self._is_rate_limit_error(e):
+                return {"error": "AI service is temporarily rate-limited. Please wait a moment and try again."}
+            else:
+                return {"error": str(e)}
 
     async def explain_file(self, code: str, path: str, context: dict[str, Any]) -> str:
         if not self.client:
@@ -148,13 +198,27 @@ class GeminiService:
         """
 
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt
+            # Add safety settings like the other methods
+            config = types.GenerateContentConfig(
+                safety_settings=[
+                    types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
+                ]
             )
+            
+            # Use retry logic for API calls
+            response = await self._generate_with_retry(prompt, config)
             return response.text
         except Exception as e:
-            return f"Failed to explain file: {str(e)}"
+            logger.error(f"Failed to explain file: {e}")
+            
+            # Check if it's a rate limit error and provide user-friendly message
+            if self._is_rate_limit_error(e):
+                return "The AI service is temporarily rate-limited. Please wait a moment and try again."
+            else:
+                return f"Failed to explain file: {str(e)}"
 
 
 llm_service = GeminiService()
