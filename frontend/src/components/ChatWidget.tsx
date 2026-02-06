@@ -146,6 +146,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ repo, analysisResult }) 
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Ask about this repo..."
                             className="flex-grow px-4 py-2 bg-[#0d1117] border border-[#30363d] rounded-xl text-sm text-[#c9d1d9] outline-none focus:ring-2 focus:ring-[#a371f7]/50 placeholder:text-[#8b949e]"
+                            aria-label="Ask a question about this repository"
                         />
                         <button
                             type="submit"
@@ -161,6 +162,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ repo, analysisResult }) 
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="p-4 bg-[#a371f7] text-white rounded-full shadow-lg hover:bg-[#9352e8] transition-transform hover:scale-105 border border-[#30363d]"
+                aria-label={isOpen ? 'Close chat assistant' : 'Open chat assistant'}
             >
                 {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
             </button>

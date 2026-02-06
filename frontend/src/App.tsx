@@ -1,5 +1,6 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useCallback } from 'react';
 import { RepoInput } from './components/RepoInput';
+import { ErrorBoundary } from './components/ErrorBoundary';
 // Lazy load Dashboard to reduce initial bundle size
 const Dashboard = lazy(() => import('./components/Dashboard').then(module => ({ default: module.Dashboard })));
 import { Sparkles, Loader2 } from 'lucide-react';
@@ -7,16 +8,16 @@ import { Sparkles, Loader2 } from 'lucide-react';
 function App() {
   const [jobId, setJobId] = useState<string | null>(null);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setJobId(null);
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0d1117] flex flex-col font-sans text-[#c9d1d9]">
-      <nav className="fixed w-full z-10 bg-[#161b22]/80 backdrop-blur-md border-b border-[#30363d] px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between transition-all duration-300">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={handleReset}>
+      <nav className="fixed w-full z-10 bg-[#161b22]/80 backdrop-blur-md border-b border-[#30363d] px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between transition-all duration-300" role="navigation" aria-label="Main navigation">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={handleReset} role="button" tabIndex={0} aria-label="Go to homepage" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleReset(); }}>
           <div className="bg-gradient-to-tr from-indigo-500 to-purple-500 p-2 rounded-lg shadow-lg shadow-indigo-500/20">
-            <Sparkles className="text-white h-5 w-5" />
+            <Sparkles className="text-white h-5 w-5" aria-hidden="true" />
           </div>
           <span className="text-xl font-bold text-[#e6edf3] tracking-tight">
             First<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">PR</span>
@@ -69,7 +70,9 @@ function App() {
               <Loader2 className="w-10 h-10 text-[#a371f7] animate-spin" />
             </div>
           }>
-            <Dashboard jobId={jobId} />
+            <ErrorBoundary>
+              <Dashboard jobId={jobId} />
+            </ErrorBoundary>
           </Suspense>
         )
         }

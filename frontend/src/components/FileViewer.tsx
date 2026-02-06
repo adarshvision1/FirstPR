@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { getFileContent, explainFile } from '../api/client';
 import { Loader2, Bot, ArrowLeft, AlertCircle, Copy, Check } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import DOMPurify from 'dompurify';
 
 interface FileViewerProps {
     repo: string;
@@ -65,11 +66,11 @@ export const FileViewer: React.FC<FileViewerProps> = ({ repo, path, onBack }) =>
         fetchContent();
     }, [repo, path]);
 
-    const handleCopy = () => {
+    const handleCopy = useCallback(() => {
         navigator.clipboard.writeText(content);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-    };
+    }, [content]);
 
     if (!path) {
         return (
@@ -152,7 +153,7 @@ export const FileViewer: React.FC<FileViewerProps> = ({ repo, path, onBack }) =>
                                     </div>
                                 ) : (
                                     <div className="prose prose-sm prose-invert max-w-none text-[#c9d1d9]">
-                                        <div dangerouslySetInnerHTML={{ __html: explanationContent.replace(/\n/g, '<br />') }} />
+                                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(explanationContent.replace(/\n/g, '<br />')) }} />
                                     </div>
                                 )}
                             </div>
