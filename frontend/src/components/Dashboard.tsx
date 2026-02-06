@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { getJobStatus, getJobResult } from '../api/client';
 import type { JobStatus, AnalysisResult } from '../types';
 import { AlertCircle } from 'lucide-react';
@@ -21,14 +21,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ jobId }) => {
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'overview' | 'file'>('overview');
 
-    const handleFileSelect = (path: string) => {
+    const handleFileSelect = useCallback((path: string) => {
         setSelectedFile(path);
         setViewMode('file');
-    };
+    }, []);
 
-    const handleBackToOverview = () => {
+    const handleBackToOverview = useCallback(() => {
         setViewMode('overview');
-    };
+    }, []);
 
     useEffect(() => {
         let interval: any;

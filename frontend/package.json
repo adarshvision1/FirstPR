@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/dompurify": "^3.0.5",
     "axios": "^1.13.5",
     "clsx": "^2.1.1",
+    "dompurify": "^3.3.1",
     "framer-motion": "^12.33.0",
     "lucide-react": "^0.563.0",
     "mermaid": "^11.12.2",

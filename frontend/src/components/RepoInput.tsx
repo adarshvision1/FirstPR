@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { analyzeRepo } from '../api/client';
 import { Loader2, ArrowRight, Github } from 'lucide-react';
 
@@ -11,7 +11,7 @@ export const RepoInput: React.FC<RepoInputProps> = ({ onAnalysisStarted }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Basic validation
@@ -35,7 +35,11 @@ export const RepoInput: React.FC<RepoInputProps> = ({ onAnalysisStarted }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [repo, onAnalysisStarted]);
+
+    const handleExampleClick = useCallback((example: string) => {
+        setRepo(example);
+    }, []);
 
     return (
         <div className="w-full max-w-2xl mx-auto">
@@ -48,6 +52,7 @@ export const RepoInput: React.FC<RepoInputProps> = ({ onAnalysisStarted }) => {
                     value={repo}
                     onChange={(e) => setRepo(e.target.value)}
                     disabled={loading}
+                    aria-label="Repository URL or owner/repo"
                 />
                 <button
                     onClick={handleSubmit}
@@ -76,7 +81,7 @@ export const RepoInput: React.FC<RepoInputProps> = ({ onAnalysisStarted }) => {
                     {['facebook/react', 'fastapi/fastapi', 'microsoft/vscode'].map((example) => (
                         <button
                             key={example}
-                            onClick={() => setRepo(example)}
+                            onClick={() => handleExampleClick(example)}
                             className="text-xs px-3 py-1.5 rounded-full bg-[#21262d] border border-[#30363d] text-[#8b949e] hover:border-[#a371f7] hover:text-[#e6edf3] transition-colors"
                         >
                             {example}
