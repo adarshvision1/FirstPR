@@ -43,7 +43,7 @@ export const RepoInput: React.FC<RepoInputProps> = ({ onAnalysisStarted }) => {
 
     return (
         <div className="w-full max-w-2xl mx-auto">
-            <div className="bg-[#161b22]/80 backdrop-blur-xl border border-[#30363d] rounded-2xl p-2 pl-6 flex items-center gap-4 transition-all focus-within:ring-2 ring-indigo-500/50 shadow-2xl shadow-indigo-500/10">
+            <div className="bg-[#161b22]/80 backdrop-blur-xl border border-[#30363d] rounded-2xl p-2 pl-6 flex items-center gap-4 transition-all duration-300 focus-within:ring-2 ring-[#a371f7]/50 focus-within:border-[#a371f7]/30 shadow-2xl shadow-[#a371f7]/5">
                 <Github className="text-[#8b949e]" size={24} />
                 <input
                     type="text"
@@ -57,7 +57,7 @@ export const RepoInput: React.FC<RepoInputProps> = ({ onAnalysisStarted }) => {
                 <button
                     onClick={handleSubmit}
                     disabled={loading || !repo}
-                    className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl px-6 py-3 font-medium transition-all flex items-center gap-2"
+                    className="bg-gradient-to-r from-[#a371f7] to-[#8b5cf6] hover:shadow-lg hover:shadow-[#a371f7]/25 hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none text-white rounded-xl px-6 py-3 font-medium transition-all duration-300 flex items-center gap-2 active:scale-95"
                 >
                     {loading ? (
                         <Loader2 className="animate-spin" size={20} />
@@ -78,11 +78,12 @@ export const RepoInput: React.FC<RepoInputProps> = ({ onAnalysisStarted }) => {
             <div className="mt-8 text-center">
                 <p className="text-[#8b949e] text-sm mb-4">Or try popular repositories:</p>
                 <div className="flex flex-wrap justify-center gap-3">
-                    {['facebook/react', 'fastapi/fastapi', 'microsoft/vscode'].map((example) => (
+                    {['facebook/react', 'fastapi/fastapi', 'microsoft/vscode'].map((example, i) => (
                         <button
                             key={example}
                             onClick={() => handleExampleClick(example)}
-                            className="text-xs px-3 py-1.5 rounded-full bg-[#21262d] border border-[#30363d] text-[#8b949e] hover:border-[#a371f7] hover:text-[#e6edf3] transition-colors"
+                            className="text-xs px-3 py-1.5 rounded-full bg-[#21262d] border border-[#30363d] text-[#8b949e] hover:border-[#a371f7] hover:text-[#e6edf3] transition-all duration-300 hover:shadow-sm hover:shadow-[#a371f7]/10 active:scale-95 animate-fade-in-up"
+                            style={{ animationDelay: `${i * 100}ms` }}
                         >
                             {example}
                         </button>
