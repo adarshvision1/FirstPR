@@ -1,6 +1,8 @@
 import React, { useCallback, useState, useMemo } from 'react';
 import { File, Folder, FolderOpen, ChevronRight, ChevronDown } from 'lucide-react';
 
+const MAX_VISIBLE_FILES = 300;
+
 interface FileExplorerProps {
     files: any[]; // Raw file list from GitHub API
     onSelectFile: (path: string) => void;
@@ -134,7 +136,7 @@ TreeItem.displayName = 'TreeItem';
 export const FileExplorer: React.FC<FileExplorerProps> = ({ files, onSelectFile, selectedFile }) => {
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
-    const tree = useMemo(() => buildTree(files.slice(0, 300)), [files]);
+    const tree = useMemo(() => buildTree(files.slice(0, MAX_VISIBLE_FILES)), [files]);
 
     const handleToggleFolder = useCallback((path: string) => {
         setExpandedFolders(prev => {
