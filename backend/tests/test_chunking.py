@@ -170,3 +170,10 @@ def test_chunk_with_none_content():
     """Test chunking with None values."""
     chunks = chunk_file(None, None)
     assert chunks == []
+    
+    # Test with only one None
+    chunks = chunk_file(None, "file.py")
+    assert chunks == []
+    
+    chunks = chunk_file("content", None)
+    assert chunks == []

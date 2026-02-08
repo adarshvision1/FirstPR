@@ -16,7 +16,7 @@ from ..core.models import (
 from ..services.activity_analyzer import activity_analyzer
 from ..services.analyzer import analyzer
 from ..services.chat_service import chat_service
-from ..services.chunking import chunk_file, budget_chunks
+from ..services.chunking import chunk_file, budget_chunks, is_entry_point
 from ..services.github import github_client
 from ..services.issue_pr_intelligence import issue_pr_intelligence
 from ..services.llm import llm_service
@@ -385,11 +385,7 @@ async def explain_comprehensive(
             entry_points = []
             for node in file_tree:
                 path = node.get("path", "")
-                if any(path.endswith(ep) for ep in [
-                    "main.py", "app.py", "__main__.py", 
-                    "index.js", "server.js", "main.js",
-                    "src/index.tsx", "src/main.ts", "src/App.tsx"
-                ]):
+                if is_entry_point(path):
                     entry_points.append(path)
             
             # Collect files to chunk
