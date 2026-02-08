@@ -1,12 +1,12 @@
 """
 Chunking service for repository content preparation.
 
-Implements smart chunking strategies for different file types with metadata preservation.
+Implements smart chunking strategies for different file types with
+metadata preservation.
 """
 
 import re
 from typing import Any
-
 
 # Constants
 MAX_CHUNK_SIZE = 4000  # characters
@@ -34,11 +34,19 @@ def classify_chunk_type(chunk: dict[str, Any]) -> str:
         return "readme"
     elif path.startswith("docs/") or path.endswith(".md"):
         return "docs"
-    elif any(path.endswith(ext) for ext in [".yml", ".yaml", ".json", ".toml", ".ini", ".conf"]):
+    elif any(
+        path.endswith(ext)
+        for ext in [".yml", ".yaml", ".json", ".toml", ".ini", ".conf"]
+    ):
         return "config"
-    elif "test" in path or path.endswith(("_test.py", ".test.js", ".test.ts", ".spec.js")):
+    elif "test" in path or path.endswith(
+        ("_test.py", ".test.js", ".test.ts", ".spec.js")
+    ):
         return "test"
-    elif any(path.endswith(ext) for ext in [".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs"]):
+    elif any(
+        path.endswith(ext)
+        for ext in [".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs"]
+    ):
         return "code"
     else:
         return "other"
@@ -103,7 +111,10 @@ def chunk_by_markdown_headers(content: str, path: str) -> list[dict[str, Any]]:
             "content": section["content"],
             "path": path,
             "chunk_id": f"{path}:chunk_{idx}",
-            "line_range": [section["line_start"], section["line_start"] + len(content_lines) - 1],
+            "line_range": [
+                section["line_start"],
+                section["line_start"] + len(content_lines) - 1
+            ],
             "heading": section["header"],
             "heading_level": section["level"]
         })
@@ -215,7 +226,10 @@ def chunk_file(content: str, path: str) -> list[dict[str, Any]]:
     # Route to appropriate chunking strategy
     if path.endswith('.md'):
         return chunk_by_markdown_headers(content, path)
-    elif any(path.endswith(ext) for ext in ['.py', '.js', '.ts', '.tsx', '.jsx', '.go', '.rs']):
+    elif any(
+        path.endswith(ext)
+        for ext in ['.py', '.js', '.ts', '.tsx', '.jsx', '.go', '.rs']
+    ):
         return chunk_by_code_structure(content, path)
     else:
         return chunk_by_sliding_window(content, path)
@@ -277,7 +291,9 @@ def prioritize_chunks(chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(chunks, key=score_chunk, reverse=True)
 
 
-def budget_chunks(chunks: list[dict[str, Any]], max_tokens: int = MAX_TOKENS_ESTIMATE) -> dict[str, Any]:
+def budget_chunks(
+    chunks: list[dict[str, Any]], max_tokens: int = MAX_TOKENS_ESTIMATE
+) -> dict[str, Any]:
     """
     Select chunks that fit within token budget using priority system.
     

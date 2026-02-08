@@ -15,7 +15,6 @@ from google.genai import types
 from ..core.config import settings
 from .chunking import (
     classify_chunk_type,
-    estimate_tokens,
     generate_quick_summary,
 )
 
@@ -233,7 +232,8 @@ class PromptComposerService:
         try:
             # Call LLM with safety settings
             config = types.GenerateContentConfig(
-                temperature=0.3,  # Lower temperature for deterministic prompt engineering
+                # Lower temperature for deterministic prompt engineering
+                temperature=0.3,
                 safety_settings=[
                     types.SafetySetting(
                         category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"
