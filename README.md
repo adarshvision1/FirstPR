@@ -1,5 +1,7 @@
 # FirstPR
 
+**Your AI co-pilot for open source!** Get instant architecture insights, understand codebases fast, and make your first contribution with confidence. Built by contributors, for contributors.
+
 Gemini 3 powered repository analysis and onboarding assistant.
 
 ## Quick Start
