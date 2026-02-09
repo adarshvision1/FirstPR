@@ -59,5 +59,8 @@ The easiest way to run the application is with Docker Compose.
 4. Open [http://localhost:3000](http://localhost:3000) for the app.
    The backend API will be available at [http://localhost:8000/api](http://localhost:8000/api).
 
+## Project Story
+See [DEVPOST.md](DEVPOST.md) for the full project story — inspiration, architecture, challenges, and what we learned.
+
 ## Deployment
 See [DEPLOY.md](DEPLOY.md) for Google Cloud Run deployment instructions.
