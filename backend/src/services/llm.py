@@ -9,7 +9,7 @@ class GeminiService:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
             genai.configure(api_key=settings.GOOGLE_API_KEY)
-            self.model_name = "gemini-pro"
+            self.model_name = "gemini-1.5-flash"
         else:
             self.model_name = None
 
