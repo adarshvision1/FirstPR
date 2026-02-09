@@ -18,6 +18,11 @@ from ..services.rules_detector import rules_detector
 router = APIRouter(default_response_class=ORJSONResponse)
 print("DEBUG: Loading routes.py module")
 
+# Health check endpoint for Railway
+@router.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "firstpr-backend"}
+
 # In-memory job store - Replace with Redis/DB in prod
 jobs = {}
 
