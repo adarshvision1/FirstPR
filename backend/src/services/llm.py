@@ -61,18 +61,31 @@ class GeminiService:
         """
 
         try:
-            response = await self.model.generate_content_async(prompt)
+            # Add safety settings to reduce likelihood of blocked responses
+            safety_settings = [
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            ]
+            
+            response = await self.model.generate_content_async(
+                prompt,
+                safety_settings=safety_settings
+            )
+            
+            if not response.text:
+                 return {"error": "Empty response from LLM"}
+
             text = response.text.strip()
+            
             # Clean up markdown code blocks if present
-            if text.startswith("```json"):
-                text = text[7:]
-            if text.endswith("```"):
-                text = text[:-3]
-            if text.startswith("```"):
-                text = text[3:]
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
 
             import json
-
             try:
                 result = json.loads(text)
 
@@ -84,14 +97,23 @@ class GeminiService:
                     result["architecture_diagram_mermaid"] = diag
 
                 return result
-            except json.JSONDecodeError:
-                # Fallback: try to repair or just return partial
-                print(f"JSON Decode Error. Raw text snippet: {text[:100]}...")
-                return {"error": "Failed to parse LLM response", "raw": text[:500]}
+            except json.JSONDecodeError as je:
+                # Try to find JSON within the text if the above fails
+                import re
+                json_match = re.search(r'(\{.*\})', text, re.DOTALL)
+                if json_match:
+                    try:
+                        return json.loads(json_match.group(1))
+                    except:
+                        pass
+                
+                print(f"JSON Decode Error: {je}. Raw text snippet: {text[:100]}...")
+                return {"error": "Failed to parse LLM response as JSON", "raw": text[:500]}
 
         except Exception as e:
             with open("llm_debug.log", "a") as f:
-                f.write(f"Error: {str(e)}\n")
+                import datetime
+                f.write(f"[{datetime.datetime.now()}] Error: {str(e)}\n")
             print(f"LLM Generation failed: {e}")
             return {"error": str(e)}
 
