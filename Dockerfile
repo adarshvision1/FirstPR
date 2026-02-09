@@ -23,12 +23,8 @@ RUN pip install --upgrade pip && \
 # Copy the backend application
 COPY backend/ .
 
-# Copy startup script
-COPY backend/start.sh .
-RUN chmod +x start.sh
-
 # Expose port
 EXPOSE 8080
 
-# Run the application using startup script
-CMD ["./start.sh"]
+# Run the application using Python entrypoint
+CMD ["python", "run.py"]
