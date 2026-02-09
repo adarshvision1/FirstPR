@@ -1,85 +1,102 @@
-from typing import Any
-
+import json
+import logging
+from typing import Any, Dict, Optional
 
 from google import genai
 from google.genai import types
+from pydantic import ValidationError
 
+# Assuming you have a config module
 from ..core.config import settings
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 class GeminiService:
     def __init__(self):
+        """
+        Initialize the Gemini Client.
+        """
         if settings.GOOGLE_API_KEY:
+            # CORRECTED: Removed invalid 'vertexai' arg. 
+            # The client automatically handles connection details based on the API Key.
             self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-            self.model_name = "gemini-2.0-flash-thinking-exp-01-21"
+            
+            # CORRECTED: Using the valid model ID that supports ThinkingConfig.
+            # "gemini-3-pro" does not exist yet. 
+            # Current SOTA for reasoning is Gemini 2.0 Flash Thinking.
+            self.model_name = "gemini-2.0-flash-thinking-exp-01-21" 
         else:
             self.client = None
             self.model_name = None
+            logger.warning("GOOGLE_API_KEY not found. GeminiService disabled.")
 
-    async def generate_analysis(self, bundle: dict[str, Any]) -> dict[str, Any]:
+    async def generate_analysis(self, bundle: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generates a deep technical analysis using a Thinking model.
+        """
         if not self.client:
             return {"error": "LLM API Key not configured"}
 
-        # context optimization: limit top functions and file tree size
+        # --- Context Preparation (Preserved logic) ---
         repo_name = bundle.get("repo", "Unknown Repo")
         metadata = bundle.get("metadata", {})
         tech_stack = bundle.get("tech_stack", {})
 
-        # Truncate manifests to avoid token limits
+        # Truncate manifests
         manifests = {}
         for k, v in bundle.get("manifests", {}).items():
             manifests[k] = v[:2000] + "..." if len(v) > 2000 else v
 
-        # Prepare Discussions Summary for Context
+        # Prepare Discussions
         discussions_context = "No discussions available."
         discussions = bundle.get("discussions", [])
-        if discussions and isinstance(discussions, list):
+        if isinstance(discussions, list) and discussions:
             discussions_summary = []
             for d in discussions[:5]:
                 title = d.get("title", "N/A")
-                body = d.get("body", "")[:200].replace("\n", " ") + "..."
+                body = str(d.get("body", ""))[:200].replace("\n", " ")
                 comments = d.get("comments", 0)
-                discussions_summary.append(f"- [Components/Topic] {title}: {body} ({comments} comments)")
+                discussions_summary.append(f"- {title}: {body}... ({comments} comments)")
             discussions_context = "\n".join(discussions_summary)
 
-        # Prepare Context
-        readme = bundle.get("readme", "")[:5000] # Truncate README
-        core_files = bundle.get("core_files", {})
+        # Prepare Files & Issues
+        readme = bundle.get("readme", "")[:5000]
         core_files_context = ""
-        for path, content in core_files.items():
-            core_files_context += f"--- FILE: {path} ---\n{content[:3000]}\n\n" # 3k char limit per file
+        for path, content in bundle.get("core_files", {}).items():
+            core_files_context += f"--- FILE: {path} ---\n{content[:3000]}\n\n"
 
-        issues = bundle.get("issues", [])
         issues_context = ""
-        if issues:
-            for i in issues[:5]: # Top 5 issues
-                issues_context += f"Issue #{i.get('number')}: {i.get('title')} (Labels: {[l['name'] for l in i.get('labels', [])]})\n"
+        for i in bundle.get("issues", [])[:5]:
+            labels = [l['name'] for l in i.get('labels', [])]
+            issues_context += f"Issue #{i.get('number')}: {i.get('title')} (Labels: {labels})\n"
 
+        # --- Prompt Engineering ---
         prompt = f"""
         <role>
-        You are a principal software architect and open-source mentor onboarding a new contributor to the '{repo_name}' repository.
-        You are precise, insightful, and focused on "deep understanding" rather than surface-level observation.
+        You are a principal software architect onboarding a contributor to '{repo_name}'.
         </role>
 
         <context>
         <metadata>
         Description: {metadata.get("description", "N/A")}
         Language: {metadata.get("language", "N/A")}
-        Detected Tech Stack: {tech_stack}
+        Stack: {tech_stack}
         Entry Points: {bundle.get("entry_points", [])}
-        Top Initial Functions: {[f.name for f in bundle.get("top_functions", [])][:10]}
+        Top Functions: {[f.name for f in bundle.get("top_functions", [])][:10]}
         </metadata>
 
-        <readme_snippet>
+        <readme>
         {readme}
-        </readme_snippet>
+        </readme>
 
-        <open_issues>
+        <issues>
         {issues_context}
-        </open_issues>
+        </issues>
 
-        <community_insights>
+        <discussions>
         {discussions_context}
-        </community_insights>
+        </discussions>
 
         <manifests>
         {manifests}
@@ -87,18 +104,17 @@ class GeminiService:
         </context>
 
         <task>
-        Analyze the provided context to produce a **DEEP, insightful technical analysis** and a **detailed, practical onboarding plan**.
+        Analyze the context to produce a **DEEP technical analysis** and **onboarding plan**.
         
-        CRITICAL FOCUS AREAS:
-        1. **Architecture**: Don't just list components. Explain the *flow* of data and control.
-        2. **Onboarding**: Create a realistic Day 1-7 roadmap based on the actual identified `entry_points` and `open_issues`.
+        CRITICAL:
+        1. Explain data flow and architecture, not just components.
+        2. Create a realistic Day 1-7 roadmap based on `entry_points` and `issues`.
         </task>
 
         <constraints>
         1. Output MUST be valid JSON.
-        2. No Markdown formatting (no ```json blocks).
-        3. Ensure `architecture_diagram_mermaid` is valid MermaidJS syntax.
-        4. Be concise but deep. Avoid fluff.
+        2. MermaidJS diagrams must be valid syntax.
+        3. No markdown formatting (no ```json blocks) in the final output string if possible.
         </constraints>
 
         <output_format>
@@ -106,113 +122,109 @@ class GeminiService:
         {{
             "project_summary": {{ "one_liner": "...", "audience": "...", "maturity": "..." }},
             "architecture_overview": {{ 
-                "narrative": "High-level narrative of system design. Explain data flow, key abstractions, and design patterns.", 
+                "narrative": "...", 
                 "components": [{{ "name": "...", "purpose": "..." }}], 
-                "tech_stack_reasoning": [{{ "technology": "...", "purpose": "...", "reasoning": "Why was this chosen?" }}] 
+                "tech_stack_reasoning": [{{ "technology": "...", "reasoning": "..." }}] 
             }},
             "architecture_diagram_mermaid": "graph TD; ...",
             "folder_structure": [ {{ "path": "...", "responsibility": "..." }} ],
-            "core_components_and_functions": [ {{ "symbol": "...", "purpose": "Deep dive interaction analysis." }} ],
+            "core_components_and_functions": [ {{ "symbol": "...", "purpose": "..." }} ],
             "tech_stack_detected": {{ "languages": [...], "frameworks": [...] }},
-            "development_workflow": {{ "setup_commands": ["..."], "run_local": ["..."], "test_commands": ["..."] }},
-            "issue_analysis_and_recommendations": {{ "top_candidates": ["..."] }},
-            "firstpr_onboarding_roadmap": {{ 
-                "day0": ["..."], 
-                "day1": ["..."], 
-                "day2_3": ["..."], 
-                "day4_7": ["..."] 
-            }},
+            "development_workflow": {{ "setup_commands": [...], "run_local": [...], "test_commands": [...] }},
+            "issue_analysis_and_recommendations": {{ "top_candidates": [...] }},
+            "firstpr_onboarding_roadmap": {{ "day0": [...], "day1": [...], "day2_3": [...], "day4_7": [...] }},
             "social_links": [ {{ "platform": "...", "url": "..." }} ],
             "frequently_asked_questions": [ {{ "question": "...", "answer": "..." }} ],
-            "missing_docs_and_improvements": ["..."]
+            "missing_docs_and_improvements": [...]
         }}
         </output_format>
         """
 
         try:
-            # Using the new SDK's async generation
+            # CORRECTED: ThinkingConfig syntax update.
+            # include_thoughts=True is the standard way to enable reasoning in the public SDK.
+            config = types.GenerateContentConfig(
+                response_mime_type="application/json",
+                thinking_config=types.ThinkingConfig(include_thoughts=True)
+            )
+
             response = await self.client.aio.models.generate_content(
                 model=self.model_name,
                 contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    thinking_config=types.ThinkingConfig(include_thoughts=True)
-                )
+                config=config
             )
-            
+
+            # --- Robust JSON Extraction ---
             text = response.text.strip()
-            # Handle potential markdown code blocks in thinking model output
-            if text.startswith("```json"):
-                text = text.split("```json")[1].split("```")[0].strip()
-            elif text.startswith("```"):
-                text = text.split("```")[1].split("```")[0].strip()
-            # Clean up markdown code blocks if present (though response_mime_type should handle it)
+            
+            # Remove Markdown blocks if the model ignored instructions
             if text.startswith("```json"):
                 text = text[7:]
+            if text.startswith("```"): # Generic block
+                text = text[3:]
             if text.endswith("```"):
                 text = text[:-3]
-            if text.startswith("```"):
-                text = text[3:]
-
-            import json
+            
+            text = text.strip()
 
             try:
                 result = json.loads(text)
 
-                # Fix Mermaid Syntax: Remove markdown code blocks if present in the value
+                # Fix Mermaid Syntax in post-processing
                 if "architecture_diagram_mermaid" in result:
                     diag = result["architecture_diagram_mermaid"]
-                    if "```" in diag:
-                        diag = diag.replace("```mermaid", "").replace("```", "").strip()
+                    # Remove potential markdown wrapping inside the JSON value
+                    diag = diag.replace("```mermaid", "").replace("```", "").strip()
                     result["architecture_diagram_mermaid"] = diag
 
                 return result
-            except json.JSONDecodeError:
-                # Fallback: try to repair or just return partial
-                print(f"JSON Decode Error. Raw text snippet: {text[:100]}...")
-                return {"error": "Failed to parse LLM response", "raw": text[:500]}
+
+            except json.JSONDecodeError as je:
+                logger.error(f"JSON Decode Error: {je}")
+                # Fallback: Return raw text wrapped in error for debugging
+                return {
+                    "error": "Failed to parse LLM response", 
+                    "raw_partial": text[:1000]
+                }
 
         except Exception as e:
-            with open("llm_debug.log", "a") as f:
-                f.write(f"Error: {str(e)}\n")
-            print(f"LLM Generation failed: {e}")
+            logger.error(f"LLM Generation failed: {e}")
             return {"error": str(e)}
 
-    async def explain_file(self, code: str, path: str, context: dict[str, Any]) -> str:
+    async def explain_file(self, code: str, path: str, context: Dict[str, Any]) -> str:
         if not self.client:
             return "Error: LLM API Key not configured."
 
         repo_name = context.get("repo", "Unknown")
 
         prompt = f"""
-        You are an expert developer explaining a file from the '{repo_name}' repository.
-        File Path: {path}
+        You are an expert developer explaining a file from '{repo_name}'.
+        File: {path}
         
-        ## Code Content
+        Code:
         ```
         {code[:10000]} 
         ```
-        (Code truncated if too long)
         
-        ## Task
-        Provide a concise explanation of this file.
-        1. What is its primary purpose?
-        2. Key functions or classes?
-        3. How does it fit into the broader project (if inferable)?
+        Task:
+        1. Purpose?
+        2. Key classes/functions?
+        3. Relation to project?
         
-        Keep it robust but concise (under 200 words). Use markdown.
+        Concise (under 200 words). Markdown allowed.
         """
 
         try:
+            # Note: Not using thinking models for simple explanations to save latency/quota
+            # Switching to a standard fast model for this specific task is often better
+            # but we use self.model_name here for consistency.
             response = await self.client.aio.models.generate_content(
                 model=self.model_name,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    thinking_config=types.ThinkingConfig(include_thoughts=True)
-                )
+                contents=prompt
             )
             return response.text
         except Exception as e:
             return f"Failed to explain file: {str(e)}"
 
+# Instantiate
 llm_service = GeminiService()
