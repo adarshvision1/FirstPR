@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        font-family: 'Outfit', sans-serif;
+        @apply bg-[#0d1117] text-[#c9d1d9] overflow-hidden antialiased;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Space Grotesk', sans-serif;
+        @apply text-[#e6edf3];
+    }
+}
+
+/* Utilities */
+.glass-card {
+    @apply bg-[#161b22]/80 backdrop-blur-xl border border-[#30363d] shadow-xl;
+}
+
+.glass-panel {
+    @apply bg-[#161b22]/50 backdrop-blur-md border border-[#30363d];
+}
+
+.gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#4f8bff] via-[#a78bfa] to-[#4f8bff];
+}
+
+/* Custom Scrollbar - Dark & Sleek */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0d1117;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #30363d;
+    border-radius: 9999px;
+    border: 2px solid #0d1117;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #8b949e;
+}
+
+/* Syntax Highlighting Overrides if needed */
+pre {
+    @apply bg-[#161b22] border border-[#30363d] rounded-lg !important;
+}
+
+/* Background Effects */
+.mesh-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    background-color: #0d1117;
+    pointer-events: none;
+}
+
+.mesh-blob {
+    position: absolute;
+    filter: blur(100px);
+    z-index: -1;
+    opacity: 0.15; /* Subtle in dark mode */
+    border-radius: 9999px;
+}
+
+.mesh-blob-1 {
+    top: -10%;
+    left: -10%;
+    width: 50vw;
+    height: 50vw;
+    background: radial-gradient(circle, rgba(79, 139, 255, 0.4) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+.mesh-blob-2 {
+    bottom: -10%;
+    right: -10%;
+    width: 60vw;
+    height: 60vw;
+    background: radial-gradient(circle, rgba(167, 139, 250, 0.4) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+.mesh-blob-3 {
+    top: 30%;
+    left: 30%;
+    width: 40vw;
+    height: 40vw;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.3) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+.animate-blob {
+    animation: blob 10s infinite;
+}
+
+.animation-delay-2000 {
+    animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+    animation-delay: 4s;
+}
+
+@keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+}

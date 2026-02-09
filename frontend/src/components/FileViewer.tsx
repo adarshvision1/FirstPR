@@ -1,0 +1,175 @@
+import React, { useEffect, useState } from 'react';
+import { getFileContent, explainFile } from '../api/client';
+import { Loader2, Bot, ArrowLeft, AlertCircle, Copy, Check } from 'lucide-react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+interface FileViewerProps {
+    repo: string;
+    path: string;
+    onBack?: () => void;
+}
+
+const getLanguageFromPath = (path: string): string => {
+    const ext = path.split('.').pop()?.toLowerCase();
+    switch (ext) {
+        case 'js': return 'javascript';
+        case 'jsx': return 'jsx';
+        case 'ts': return 'typescript';
+        case 'tsx': return 'tsx';
+        case 'py': return 'python';
+        case 'css': return 'css';
+        case 'html': return 'html';
+        case 'json': return 'json';
+        case 'md': return 'markdown';
+        case 'yml':
+        case 'yaml': return 'yaml';
+        case 'sh':
+        case 'bash': return 'bash';
+        case 'go': return 'go';
+        case 'rs': return 'rust';
+        case 'java': return 'java';
+        case 'cpp': return 'cpp';
+        case 'c': return 'c';
+        default: return 'text';
+    }
+};
+
+export const FileViewer: React.FC<FileViewerProps> = ({ repo, path, onBack }) => {
+    const [content, setContent] = useState<string>('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [showExplanation, setShowExplanation] = useState(false);
+    const [explanationContent, setExplanationContent] = useState('');
+    const [loadingExplanation, setLoadingExplanation] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        const fetchContent = async () => {
+            if (!path) return;
+            setLoading(true);
+            setError('');
+            try {
+                const data = await getFileContent(repo, path);
+                if (data && typeof data.content === 'string') {
+                    setContent(data.content);
+                } else {
+                    setContent('Binary or large file content not displayed.');
+                }
+            } catch {
+                setError('Failed to load file content.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchContent();
+    }, [repo, path]);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(content);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    if (!path) {
+        return (
+            <div className="h-full flex items-center justify-center text-[#8b949e] bg-[#0d1117]">
+                Select a file to view content
+            </div>
+        );
+    }
+
+    return (
+        <div className="h-full flex flex-col bg-[#0d1117]">
+            <div className="h-12 border-b border-[#30363d] flex items-center justify-between px-4 bg-[#161b22] sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                    {onBack && (
+                        <button onClick={onBack} className="p-1 hover:bg-[#21262d] rounded text-[#8b949e] hover:text-[#c9d1d9] transition-colors">
+                            <ArrowLeft size={16} />
+                        </button>
+                    )}
+                    <h3 className="font-mono text-sm font-medium text-[#e6edf3]">{path}</h3>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleCopy}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium bg-[#21262d] text-[#8b949e] hover:bg-[#30363d] hover:text-[#c9d1d9] transition-colors"
+                        title="Copy content"
+                    >
+                        {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                        {copied ? 'Copied' : 'Copy'}
+                    </button>
+                    <button
+                        onClick={async () => {
+                            if (!showExplanation && !explanationContent) {
+                                setLoadingExplanation(true);
+                                try {
+                                    const res = await explainFile(repo, path, content);
+                                    setExplanationContent(res.explanation);
+                                } catch (e: any) {
+                                    console.error(e);
+                                    setExplanationContent(`Failed: ${e.response?.data?.detail || e.message || "Unknown error"}`);
+                                } finally {
+                                    setLoadingExplanation(false);
+                                }
+                            }
+                            setShowExplanation(!showExplanation);
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${showExplanation ? 'bg-[#a371f7]/20 text-[#a371f7]' : 'bg-[#21262d] text-[#8b949e] hover:bg-[#30363d]'}`}
+                    >
+                        <Bot size={14} />
+                        {showExplanation ? 'Hide AI Explanation' : 'Explain with AI'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex-grow overflow-auto relative bg-[#0d1117]">
+                {loading ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-[#0d1117]/80 backdrop-blur-sm">
+                        <Loader2 className="animate-spin text-[#a371f7]" />
+                    </div>
+                ) : error ? (
+                    <div className="p-8 text-center flex flex-col items-center justify-center h-full">
+                        <AlertCircle className="h-8 w-8 text-red-400 mb-2" />
+                        <p className="text-red-400 mb-2">{error}</p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="text-xs text-[#8b949e] hover:text-[#e6edf3] underline"
+                        >
+                            Try Reloading
+                        </button>
+                    </div>
+                ) : (
+                    <div className="relative min-h-full">
+                        {showExplanation && (
+                            <div className="p-4 bg-[#1f2428] border-b border-[#30363d] text-[#c9d1d9] text-sm leading-relaxed mb-4 shadow-inner">
+                                <div className="flex items-center gap-2 mb-2 font-semibold text-[#a371f7]">
+                                    <Bot size={16} /> AI Explanation
+                                </div>
+                                {loadingExplanation ? (
+                                    <div className="flex items-center gap-2 text-[#8b949e]">
+                                        <Loader2 size={14} className="animate-spin" /> Generating explanation...
+                                    </div>
+                                ) : (
+                                    <div className="prose prose-sm prose-invert max-w-none text-[#c9d1d9]">
+                                        <div dangerouslySetInnerHTML={{ __html: explanationContent.replace(/\n/g, '<br />') }} />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        <SyntaxHighlighter
+                            language={getLanguageFromPath(path)}
+                            style={vscDarkPlus}
+                            customStyle={{ margin: 0, padding: '1rem', background: '#0d1117', minHeight: '100%' }}
+                            codeTagProps={{ style: { fontFamily: "'JetBrains Mono', monospace", fontSize: '0.875rem' } }}
+                            showLineNumbers={true}
+                            lineNumberStyle={{ minWidth: "3em", paddingRight: "1em", color: "#484f58", textAlign: "right" }}
+                        >
+                            {content}
+                        </SyntaxHighlighter>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};

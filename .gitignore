@@ -1,0 +1,59 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+venv
+.venv
+env
+.env
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.testmondata/
+
+# VS Code
+.vscode/
+.history/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+firstpr.db
+*.log
+FirstPR-Source.zip
+FirstPR-Source-Lite.zip
+temp_lite_build/
