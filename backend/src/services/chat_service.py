@@ -1,6 +1,7 @@
 
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from ..core.config import settings
 from typing import List, Dict, Any
 
@@ -8,9 +9,10 @@ from typing import List, Dict, Any
 class ChatService:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
-            self.model_name = "gemini-1.5-flash"
+            self.client = genai.Client(api_key=settings.GOOGLE_API_KEY, vertexai=False)
+            self.model_name = "gemini-3-pro-preview"
         else:
+            self.client = None
             self.model_name = None
 
     def _format_issues(self, issues_data: Dict[str, Any]) -> str:
@@ -72,7 +74,7 @@ class ChatService:
     async def chat(
         self, message: str, history: List[Dict[str, str]], context: Dict[str, Any]
     ) -> Dict[str, str]:
-        if not self.model_name:
+        if not self.client:
             return {
                 "answer": "Error: LLM API Key not configured. Please check .env file."
             }
@@ -173,9 +175,14 @@ class ChatService:
             print("DEBUG: Sending prompt to LLM...")
             # print(f"DEBUG: System Prompt: {system_prompt[:500]}...") # Log partial prompt
             
-            # Using google.generativeai library
-            model = genai.GenerativeModel(self.model_name)
-            response = await model.generate_content_async(system_prompt)
+            # Using the new SDK's async generation
+            response = await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=system_prompt,
+                config=types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(thinking_level="high")
+                )
+            )
             
             print("DEBUG: LLM Response received")
             return {"answer": response.text}

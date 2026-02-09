@@ -1,20 +1,22 @@
 from typing import Any
 
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from ..core.config import settings
 
 class GeminiService:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
-            self.model_name = "gemini-1.5-flash"
+            self.client = genai.Client(api_key=settings.GOOGLE_API_KEY, vertexai=False)
+            self.model_name = "gemini-3-pro-preview"
         else:
+            self.client = None
             self.model_name = None
 
     async def generate_analysis(self, bundle: dict[str, Any]) -> dict[str, Any]:
-        if not self.model_name:
+        if not self.client:
             return {"error": "LLM API Key not configured"}
 
         # context optimization: limit top functions and file tree size
@@ -128,11 +130,14 @@ class GeminiService:
         """
 
         try:
-            # Using google.generativeai library
-            model = genai.GenerativeModel(self.model_name)
-            response = await model.generate_content_async(
-                prompt,
-                generation_config={"response_mime_type": "application/json"}
+            # Using the new SDK's async generation
+            response = await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    thinking_config=types.ThinkingConfig(thinking_level="high")
+                )
             )
             
             text = response.text.strip()
@@ -169,7 +174,7 @@ class GeminiService:
             return {"error": str(e)}
 
     async def explain_file(self, code: str, path: str, context: dict[str, Any]) -> str:
-        if not self.model_name:
+        if not self.client:
             return "Error: LLM API Key not configured."
 
         repo_name = context.get("repo", "Unknown")
@@ -194,8 +199,13 @@ class GeminiService:
         """
 
         try:
-            model = genai.GenerativeModel(self.model_name)
-            response = await model.generate_content_async(prompt)
+            response = await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(thinking_level="high")
+                )
+            )
             return response.text
         except Exception as e:
             return f"Failed to explain file: {str(e)}"
