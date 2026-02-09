@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 from ..core.config import settings
 from typing import List, Dict, Any
 
@@ -6,10 +6,11 @@ from typing import List, Dict, Any
 class ChatService:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
-            self.model = genai.GenerativeModel("gemini-3-pro-preview")
+            self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+            self.model_name = "gemini-2.0-flash"
         else:
-            self.model = None
+            self.client = None
+            self.model_name = None
 
     def _format_issues(self, issues_data: Dict[str, Any]) -> str:
         if not issues_data or not isinstance(issues_data, dict):
@@ -45,7 +46,7 @@ class ChatService:
     async def chat(
         self, message: str, history: List[Dict[str, str]], context: Dict[str, Any]
     ) -> Dict[str, str]:
-        if not self.model:
+        if not self.client:
             return {
                 "answer": "Error: LLM API Key not configured. Please check .env file."
             }
@@ -77,21 +78,22 @@ class ChatService:
         chat_history = []
         for h in history:
             role = "user" if h["role"] == "user" else "model"
-            chat_history.append({"role": role, "parts": [h["content"]]})
+            # In new SDK, history parts can be simpler
+            chat_history.append({"role": role, "parts": [{"text": h["content"]}]})
 
         try:
             print("DEBUG: Sending prompt to LLM...")
             
-            # Use the model to generate content
-            # For simplicity, we'll prefix with system prompt if history is empty,
-            # or use it as a preamble.
+            # The new SDK handles system instruction via config or preamble
+            # For simplicity, we'll use a preamble-like approach or start_chat
             
-            if not chat_history:
-                response = await self.model.generate_content_async(system_prompt)
-            else:
-                # Start chat session with history
-                chat_session = self.model.start_chat(history=chat_history)
-                response = await chat_session.send_message_async(message)
+            chat_session = self.client.chats.create(
+                model=self.model_name,
+                history=chat_history,
+                config={"system_instruction": system_prompt}
+            )
+            
+            response = chat_session.send_message(message)
             
             print("DEBUG: LLM Response received")
             return {"answer": response.text}
