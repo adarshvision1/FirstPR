@@ -24,4 +24,5 @@ COPY . .
 EXPOSE 8080
 
 # Run the application with uvicorn
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Use PORT environment variable for Railway compatibility
+CMD sh -c "uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8080}"
