@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AnalysisResult, ComprehensiveResult, JobStatus } from '../types';
+import type { AnalysisResult, JobStatus } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -59,15 +59,5 @@ export const chat = async (repo_url: string, message: string, context: any, hist
 
 export const explainFile = async (repo: string, path: string, content?: string) => {
   const response = await api.post('/explain-file', { repo, path, content });
-  return response.data;
-};
-
-export const explainComprehensive = async (owner: string, repo: string) => {
-  const response = await api.post<JobStatus>(`/repos/${owner}/${repo}/explain-comprehensive`);
-  return response.data;
-};
-
-export const getComprehensiveResult = async (jobId: string) => {
-  const response = await api.get<ComprehensiveResult>(`/analyze/${jobId}/result`);
   return response.data;
 };
