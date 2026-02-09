@@ -9,8 +9,8 @@ from typing import List, Dict, Any
 class ChatService:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
-            self.client = genai.Client(api_key=settings.GOOGLE_API_KEY, vertexai=False)
-            self.model_name = "gemini-3-pro-preview"
+            self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+            self.model_name = "gemini-2.0-flash-thinking-exp-01-21"
         else:
             self.client = None
             self.model_name = None
@@ -180,7 +180,7 @@ class ChatService:
                 model=self.model_name,
                 contents=system_prompt,
                 config=types.GenerateContentConfig(
-                    thinking_config=types.ThinkingConfig(thinking_level="high")
+                    thinking_config=types.ThinkingConfig(include_thoughts=True)
                 )
             )
             
