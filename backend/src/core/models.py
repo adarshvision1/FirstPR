@@ -79,6 +79,7 @@ class ChatRequest(BaseModel):
     repo_url: str
     message: str
     history: list[dict[str, str]] = []
+    context: dict[str, Any] | None = None
 
 
 class ExplainFileRequest(BaseModel):
@@ -86,4 +87,3 @@ class ExplainFileRequest(BaseModel):
     repo: str
     path: str
     content: str | None = None
-    context: dict[str, Any] | None = {}
