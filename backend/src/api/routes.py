@@ -1,4 +1,6 @@
 import asyncio
+import logging
+import traceback
 from datetime import datetime
 from uuid import uuid4
 
@@ -6,7 +8,13 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel
 
-from ..core.models import AnalysisRequest, AnalysisResult, ChatRequest, JobStatus
+from ..core.models import (
+    AnalysisRequest,
+    AnalysisResult,
+    ChatRequest,
+    ExplainFileRequest,
+    JobStatus,
+)
 from ..services.activity_analyzer import activity_analyzer
 from ..services.analyzer import analyzer
 from ..services.chat_service import chat_service
@@ -15,10 +23,10 @@ from ..services.issue_pr_intelligence import issue_pr_intelligence
 from ..services.llm import llm_service
 from ..services.rules_detector import rules_detector
 
+logger = logging.getLogger(__name__)
 router = APIRouter(default_response_class=ORJSONResponse)
-print("DEBUG: Loading routes.py module")
 
-# In-memory job store - Replace with Redis/DB in prod
+# In-memory job store - TODO: Replace with Redis/DB in production
 jobs = {}
 
 async def process_analysis(job_id: str, req: AnalysisRequest, token: str | None = None):
@@ -211,7 +219,7 @@ async def get_checks(owner: str, repo: str, x_github_token: str | None = Header(
 
 @router.get("/repos/{owner}/{repo}/community")
 async def get_community_health(owner: str, repo: str, x_github_token: str | None = Header(None, alias="X-GitHub-Token")):
-    print(f"DEBUG: get_community_health called for {owner}/{repo}")
+    """Get community health metrics including linting tools, CI checks, and active bots"""
     try:
         # Fetch metadata to get default branch
         metadata = await github_client.get_repo_metadata(owner, repo, token=x_github_token)
@@ -247,8 +255,7 @@ async def get_community_health(owner: str, repo: str, x_github_token: str | None
             "compliance_checklist": checklist
         }
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        logger.exception(f"Error in get_community_health for {owner}/{repo}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/repos/{owner}/{repo}/contents/{path:path}")
@@ -300,13 +307,9 @@ async def chat(req: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-class ExplainFileRequest(BaseModel):
-    repo: str
-    path: str
-    content: str | None = None
-
 @router.post("/explain-file")
 async def explain_file(req: ExplainFileRequest, x_github_token: str | None = Header(None, alias="X-GitHub-Token")):
+    """Explain a specific file using AI"""
     try:
         content = req.content
         if not content:
@@ -326,8 +329,7 @@ async def explain_file(req: ExplainFileRequest, x_github_token: str | None = Hea
         explanation = await llm_service.explain_file(content, req.path, {"repo": req.repo})
         return {"explanation": explanation}
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        logger.exception(f"Error explaining file {req.path} from {req.repo}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
