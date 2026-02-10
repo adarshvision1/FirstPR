@@ -87,7 +87,7 @@ class ChatService:
             role = "user" if h["role"] == "user" else "model"
             # In new SDK, history parts can be simpler
             # Support both "content" and "text" keys from frontend
-            chat_history.append({"role": role, "parts": [{"text": h.get("content") or h.get("text", "")}]})
+            chat_history.append({"role": role, "parts": [{"text": h.get("content", h.get("text", ""))}]})
 
         try:
             print("DEBUG: Sending prompt to LLM...")
