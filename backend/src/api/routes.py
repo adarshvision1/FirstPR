@@ -300,7 +300,7 @@ async def get_pull_requests(owner: str, repo: str, x_github_token: str | None = 
 @router.post("/chat")
 async def chat(req: ChatRequest):
     try:
-        response = await chat_service.chat(req.message, req.history, req.context)
+        response = await chat_service.chat(req.message, req.history, req.context or {})
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
