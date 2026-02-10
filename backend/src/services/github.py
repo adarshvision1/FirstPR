@@ -1,14 +1,16 @@
-from typing import Dict, Any, List, Optional, Union
+import logging
+from typing import Any
+
 import httpx
+from async_lru import alru_cache
 from tenacity import (
+    before_sleep_log,
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
-    before_sleep_log,
 )
-import logging
-from async_lru import alru_cache
+
 from ..core.config import settings
 from ..core.network import HTTPClient
 
@@ -34,7 +36,7 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
             "User-Agent": "FirstPR-Analyzer/1.0",
         }
 
-    def _get_headers(self, token: Optional[str] = None) -> Dict[str, str]:
+    def _get_headers(self, token: str | None = None) -> dict[str, str]:
         headers = self.default_headers.copy()
         # User token takes precedence, then system token
         effective_token = token or settings.GITHUB_TOKEN
@@ -62,7 +64,7 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     async def _request(
-        self, method: str, url: str, token: Optional[str] = None, params: Dict = None
+        self, method: str, url: str, token: str | None = None, params: dict = None
     ) -> httpx.Response:
         # Custom retry loop for 429s to handle specific headers
         for attempt in range(3):
@@ -109,8 +111,8 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
 
     @alru_cache(maxsize=32)
     async def get_repo_metadata(
-        self, owner: str, repo: str, token: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, owner: str, repo: str, token: str | None = None
+    ) -> dict[str, Any]:
         resp = await self._request(
             "GET", f"{self.base_url}/repos/{owner}/{repo}", token=token
         )
@@ -118,8 +120,8 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
 
     @alru_cache(maxsize=32)
     async def get_file_tree(
-        self, owner: str, repo: str, ref: str, token: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, owner: str, repo: str, ref: str, token: str | None = None
+    ) -> list[dict[str, Any]]:
         # Using recursive=1. Warning: large repos can fail here.
         # Future improvement: Handle truncation (response['truncated'])
         resp = await self._request(
@@ -134,7 +136,7 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
         return data.get("tree", [])
 
     async def get_file_content(
-        self, owner: str, repo: str, path: str, token: Optional[str] = None
+        self, owner: str, repo: str, path: str, token: str | None = None
     ) -> str:
         # 1MB limit for analysis to prevent memory issues
         MAX_SIZE = 1_000_000
@@ -169,16 +171,16 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
 
     @alru_cache(maxsize=32)
     async def get_repo_languages(
-        self, owner: str, repo: str, token: Optional[str] = None
-    ) -> Dict[str, int]:
+        self, owner: str, repo: str, token: str | None = None
+    ) -> dict[str, int]:
         resp = await self._request(
             "GET", f"{self.base_url}/repos/{owner}/{repo}/languages", token=token
         )
         return resp.json()
 
     async def get_issues(
-        self, owner: str, repo: str, token: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, owner: str, repo: str, token: str | None = None
+    ) -> list[dict[str, Any]]:
         resp = await self._request(
             "GET",
             f"{self.base_url}/repos/{owner}/{repo}/issues",
@@ -188,8 +190,8 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
         return resp.json()
 
     async def get_rate_limit_status(
-        self, token: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, token: str | None = None
+    ) -> dict[str, Any]:
         resp = await self._request("GET", f"{self.base_url}/rate_limit", token=token)
         return resp.json()
 
@@ -197,9 +199,9 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
         self,
         owner: str,
         repo: str,
-        token: Optional[str] = None,
-        since: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        token: str | None = None,
+        since: str | None = None,
+    ) -> list[dict[str, Any]]:
         params = {"per_page": 30}
         if since:
             params["since"] = since
@@ -212,8 +214,8 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
         return resp.json()
 
     async def get_pull_requests(
-        self, owner: str, repo: str, token: Optional[str] = None, state: str = "all"
-    ) -> List[Dict[str, Any]]:
+        self, owner: str, repo: str, token: str | None = None, state: str = "all"
+    ) -> list[dict[str, Any]]:
         resp = await self._request(
             "GET",
             f"{self.base_url}/repos/{owner}/{repo}/pulls",
@@ -228,8 +230,8 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
         return resp.json()
 
     async def get_issue_comments(
-        self, owner: str, repo: str, issue_number: int, token: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, owner: str, repo: str, issue_number: int, token: str | None = None
+    ) -> list[dict[str, Any]]:
         resp = await self._request(
             "GET",
             f"{self.base_url}/repos/{owner}/{repo}/issues/{issue_number}/comments",
@@ -239,8 +241,8 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
         return resp.json()
 
     async def get_workflow_files(
-        self, owner: str, repo: str, token: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, owner: str, repo: str, token: str | None = None
+    ) -> list[dict[str, Any]]:
         try:
             resp = await self._request(
                 "GET",
@@ -257,8 +259,8 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
             raise
 
     async def get_pr_details(
-        self, owner: str, repo: str, pull_number: int, token: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, owner: str, repo: str, pull_number: int, token: str | None = None
+    ) -> dict[str, Any]:
         resp = await self._request(
             "GET",
             f"{self.base_url}/repos/{owner}/{repo}/pulls/{pull_number}",
@@ -267,8 +269,8 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
         return resp.json()
 
     async def get_repo_discussions(
-        self, owner: str, repo: str, token: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, owner: str, repo: str, token: str | None = None
+    ) -> list[dict[str, Any]]:
         # Discussions are not fully supported in v3 REST API (some beta endpoints exist but GraphQL is better).
         # However, for simplicity and token usage, we will try to use a search query or just standard issues if discussions are not enabled.
         # Actually, standard REST API for discussions is limited or requires team/org contexts.

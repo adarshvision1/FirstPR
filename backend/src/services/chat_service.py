@@ -1,7 +1,9 @@
+from typing import Any
+
 from google import genai
 from google.genai import types
+
 from ..core.config import settings
-from typing import List, Dict, Any
 
 
 class ChatService:
@@ -13,7 +15,7 @@ class ChatService:
             self.client = None
             self.model_name = None
 
-    def _format_issues(self, issues_data: Dict[str, Any]) -> str:
+    def _format_issues(self, issues_data: dict[str, Any]) -> str:
         if not issues_data or not isinstance(issues_data, dict):
             return "No issue analysis available."
         
@@ -29,7 +31,7 @@ class ChatService:
             formatted += f"- {c}\n"
         return formatted
 
-    def _format_tech_stack(self, tech_data: Dict[str, Any]) -> str:
+    def _format_tech_stack(self, tech_data: dict[str, Any]) -> str:
         if not tech_data or not isinstance(tech_data, dict):
             return "Tech stack information not yet analyzed."
             
@@ -45,8 +47,8 @@ class ChatService:
         return stack_str if stack_str else "Basic tech stack detected."
 
     async def chat(
-        self, message: str, history: List[Dict[str, str]], context: Dict[str, Any]
-    ) -> Dict[str, str]:
+        self, message: str, history: list[dict[str, str]], context: dict[str, Any]
+    ) -> dict[str, str]:
         if not self.client:
             return {
                 "answer": "Error: LLM API Key not configured. Please check .env file."
