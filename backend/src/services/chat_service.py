@@ -1,9 +1,17 @@
+import asyncio
+import logging
 from typing import Any
 
 from google import genai
 from google.genai import types
 
 from ..core.config import settings
+
+# Constants for retry logic
+MAX_RETRIES = 3
+BASE_DELAY = 2
+
+logger = logging.getLogger(__name__)
 
 
 class ChatService:
@@ -45,6 +53,49 @@ class ChatService:
             stack_str += f"Frameworks: {', '.join(frameworks)}\n"
             
         return stack_str if stack_str else "Basic tech stack detected."
+
+    def _is_rate_limit_error(self, error: Exception) -> bool:
+        """Check if an exception is a rate limit error."""
+        error_str = str(error).lower()
+        rate_limit_keywords = [
+            "resource_exhausted",
+            "429",
+            "rate limit",
+            "quota",
+            "too many requests",
+        ]
+        return any(keyword in error_str for keyword in rate_limit_keywords)
+
+    async def _generate_with_retry(self, prompt: str, config: types.GenerateContentConfig) -> Any:
+        """Generate content with retry logic and exponential backoff."""
+        last_exception = None
+        
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=prompt,
+                    config=config
+                )
+                return response
+            except Exception as e:
+                last_exception = e
+                if self._is_rate_limit_error(e):
+                    if attempt < MAX_RETRIES - 1:
+                        delay = BASE_DELAY * (2 ** attempt)
+                        logger.warning(
+                            f"Rate limit hit on attempt {attempt + 1}/{MAX_RETRIES}. "
+                            f"Retrying in {delay}s..."
+                        )
+                        await asyncio.sleep(delay)
+                    else:
+                        logger.error(f"Rate limit hit after {MAX_RETRIES} attempts")
+                else:
+                    # For non-rate-limit errors, raise immediately
+                    raise
+        
+        # If we get here, all retries were exhausted
+        raise last_exception
 
     async def chat(
         self, message: str, history: list[dict[str, str]], context: dict[str, Any]
@@ -90,7 +141,7 @@ class ChatService:
             chat_history.append({"role": role, "parts": [{"text": h.get("content", h.get("text", ""))}]})
 
         try:
-            print("DEBUG: Sending prompt to LLM...")
+            logger.debug("Sending prompt to LLM...")
             
             # Format conversation history into the prompt
             conversation_context = ""
@@ -113,24 +164,28 @@ class ChatService:
                 ]
             )
             
-            # Use the correct API method
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=full_prompt,
-                config=config
-            )
+            # Use retry logic for API calls
+            response = await self._generate_with_retry(full_prompt, config)
             
             if not response.text:
                 return {"answer": "I received an empty response. Please try again."}
             
-            print("DEBUG: LLM Response received")
+            logger.debug("LLM Response received")
             return {"answer": response.text}
 
         except Exception as e:
-            print(f"DEBUG: Chat Error: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return {"answer": f"I encountered an error while thinking: {str(e)}"}
+            logger.error(f"Chat Error: {str(e)}")
+            
+            # Check if it's a rate limit error and provide user-friendly message
+            if self._is_rate_limit_error(e):
+                return {
+                    "answer": "I'm currently experiencing high demand and hit a rate limit. "
+                    "Please wait a moment and try again. If this persists, the API quota may need to be increased."
+                }
+            else:
+                return {
+                    "answer": "I encountered an error while processing your request. Please try again later."
+                }
 
 
 chat_service = ChatService()
