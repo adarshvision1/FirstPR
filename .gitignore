@@ -6,6 +6,9 @@ venv
 .venv
 env
 .env
+.env.test
+.env.local
+.pdm-python
 
 # Python
 __pycache__

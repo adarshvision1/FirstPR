@@ -3,8 +3,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "FirstPR"
+    # Empty API prefix means routes mount at root (e.g., /analyze instead of /api/analyze)
     API_V1_STR: str = ""
     ENV: str = "development"
+
+    # CORS - comma-separated list of allowed origins (e.g., "http://localhost:3000,https://app.example.com")
+    # Use "*" for development only
+    CORS_ORIGINS: str = "*"
 
     # Database
     DATABASE_URL: str = "sqlite:///./firstpr.db"
