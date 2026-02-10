@@ -54,6 +54,10 @@ class ChatService:
                 "answer": "Error: LLM API Key not configured. Please check .env file."
             }
 
+        # Guard against None context
+        if context is None:
+            context = {}
+
         # Build conversation context
         project_one_liner = context.get("summary", {}).get("one_liner", "a GitHub repository")
         tech_stack = self._format_tech_stack(context.get("tech_stack", {}))
@@ -76,13 +80,14 @@ class ChatService:
         """
 
         # Convert history format for Gemini
-        # history is List of {"role": "user/assistant", "content": "..."}
+        # history is List of {"role": "user/assistant", "content": "..."} or {"role": "user/assistant", "text": "..."}
         # Gemini expects roles "user" and "model"
         chat_history = []
         for h in history:
             role = "user" if h["role"] == "user" else "model"
             # In new SDK, history parts can be simpler
-            chat_history.append({"role": role, "parts": [{"text": h["content"]}]})
+            # Support both "content" and "text" keys from frontend
+            chat_history.append({"role": role, "parts": [{"text": h.get("content", h.get("text", ""))}]})
 
         try:
             print("DEBUG: Sending prompt to LLM...")
