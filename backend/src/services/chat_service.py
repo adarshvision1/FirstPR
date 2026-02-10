@@ -18,7 +18,7 @@ class ChatService:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
             self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-            self.model_name = "gemini-2.0-flash"
+            self.model_name = "gemini-3-pro-preview"
         else:
             self.client = None
             self.model_name = None
@@ -126,8 +126,6 @@ class ChatService:
         - You have access to deep architectural analysis of this repo.
         - You should prioritize helping the user understand how to make their FIRST contribution.
         - Keep answers concise, technical, and encouraging.
-        
-        Current User Question: {message}
         """
 
         # Convert history format for Gemini
@@ -152,7 +150,7 @@ class ChatService:
                     conversation_context += f"{role_label}: {msg['parts'][0]['text']}\n"
             
             # Combine system prompt with conversation history
-            full_prompt = system_prompt + conversation_context
+            full_prompt = system_prompt + conversation_context + f"\n\n## Current User Question:\n{message}\n"
             
             # Add safety settings like the LLM service
             config = types.GenerateContentConfig(
