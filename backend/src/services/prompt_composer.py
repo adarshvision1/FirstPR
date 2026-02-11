@@ -80,7 +80,7 @@ Return a JSON object with these exact keys:
 
 The system_prompt should be comprehensive instructions for structured output.
 The user_prompt_prefix is optional - we'll build the user prompt from chunks.
-Ensure the combined prompt stays within 990,000 tokens (~3.96M characters).
+Ensure the combined prompt stays within 2,970,000 tokens (~11.88M characters).
 
 Provide ONLY the JSON output, no additional text.
 """
@@ -234,6 +234,7 @@ class PromptComposerService:
             config = types.GenerateContentConfig(
                 # Lower temperature for deterministic prompt engineering
                 temperature=0.3,
+                max_output_tokens=65536,
                 safety_settings=[
                     types.SafetySetting(
                         category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"
@@ -366,6 +367,7 @@ Generate a comprehensive onboarding guide following the specified JSON structure
             # Call LLM with safety settings
             config = types.GenerateContentConfig(
                 temperature=0.5,
+                max_output_tokens=65536,
                 safety_settings=[
                     types.SafetySetting(
                         category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"
