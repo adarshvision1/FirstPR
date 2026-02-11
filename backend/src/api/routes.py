@@ -55,33 +55,40 @@ async def process_analysis(job_id: str, req: AnalysisRequest, token: str | None 
         # Analyze Code
         analysis = await analyzer.analyze_repo(file_tree, "/tmp") 
 
-        # 1. Fetch README
+        # 1. Fetch README - optimized with parallel attempts
         readme_content = ""
         possible_readmes = ["README.md", "readme.md", "README.rst", "README.txt"]
-        for rm in possible_readmes:
-            try:
-                # Check if file exists in tree
-                if any(f["path"].lower() == rm.lower() for f in file_tree):
-                    readme_content = await github_client.get_file_content(owner, repo_name, rm, token=token)
-                    if readme_content:
-                        break
-            except Exception:
-                continue
-
-
-
-        # 3. Fetch Issues for Onboarding context
-        issues = await github_client.get_issues(owner, repo_name, token=token)
+        # Find which readmes exist in the tree
+        existing_readmes = [rm for rm in possible_readmes if any(f["path"].lower() == rm.lower() for f in file_tree)]
         
-        # Fetch Top Discussions
-        discussions = await github_client.get_repo_discussions(owner, repo_name, token=token)
+        # Try to fetch them in parallel and use the first successful one
+        if existing_readmes:
+            async def try_fetch_readme(rm):
+                try:
+                    content = await github_client.get_file_content(owner, repo_name, rm, token=token)
+                    return content if content else None
+                except Exception:
+                    return None
+            
+            # Fetch all potential READMEs in parallel
+            readme_results = await asyncio.gather(*[try_fetch_readme(rm) for rm in existing_readmes], return_exceptions=True)
+            # Use the first non-empty result
+            for result in readme_results:
+                if result and not isinstance(result, Exception):
+                    readme_content = result
+                    break
+
+        # 2. Fetch Issues and Discussions in parallel (instead of sequentially)
+        issues, discussions = await asyncio.gather(
+            github_client.get_issues(owner, repo_name, token=token),
+            github_client.get_repo_discussions(owner, repo_name, token=token)
+        )
 
         # LLM Generation Bundle
         bundle = {
             "repo": req.repo,
             "metadata": metadata,
-            "readme": readme_content,
-            "readme": readme_content,
+            "readme": readme_content,  # Removed duplicate key
             "issues": issues,
             "top_functions": analysis.get("top_functions", []),
             "manifests": analysis.get("manifests", {}),

@@ -159,12 +159,10 @@ class AnalyzerService:
         full_path = os.path.join(root, path)
         if os.path.exists(full_path):
             try:
-                async with asyncio.Lock(): # Not strictly needed for read-only, removing lock for performance?
-                    # Actually, aiofiles would be better for async file I/O, but standard open() is fast enough for small text files
-                    # unless under heavy load. We'll keep it simple but remove the lock blocking.
-                    # async with aiofiles.open(full_path, mode='r') ...
-                     with open(full_path, encoding="utf-8", errors="ignore") as f:
-                        return f.read()
+                # Removed unnecessary asyncio.Lock for read-only file operations
+                # Lock was causing blocking and not needed since file reads are non-destructive
+                with open(full_path, encoding="utf-8", errors="ignore") as f:
+                    return f.read()
             except Exception:
                 return None
         return None

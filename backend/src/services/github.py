@@ -113,6 +113,11 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
     async def get_repo_metadata(
         self, owner: str, repo: str, token: str | None = None
     ) -> dict[str, Any]:
+        """
+        Get repository metadata with caching.
+        Note: Cache has no TTL. Consider clearing cache periodically for long-running services
+        using: github_client.get_repo_metadata.cache_clear()
+        """
         resp = await self._request(
             "GET", f"{self.base_url}/repos/{owner}/{repo}", token=token
         )
@@ -122,6 +127,11 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
     async def get_file_tree(
         self, owner: str, repo: str, ref: str, token: str | None = None
     ) -> list[dict[str, Any]]:
+        """
+        Get file tree with caching.
+        Note: Cache has no TTL. Consider clearing cache periodically for long-running services
+        using: github_client.get_file_tree.cache_clear()
+        """
         # Using recursive=1. Warning: large repos can fail here.
         # Future improvement: Handle truncation (response['truncated'])
         resp = await self._request(
@@ -173,6 +183,10 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
     async def get_repo_languages(
         self, owner: str, repo: str, token: str | None = None
     ) -> dict[str, int]:
+        """
+        Get repository languages with caching.
+        Note: Cache has no TTL. Consider clearing cache periodically for long-running services.
+        """
         resp = await self._request(
             "GET", f"{self.base_url}/repos/{owner}/{repo}/languages", token=token
         )

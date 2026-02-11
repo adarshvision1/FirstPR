@@ -31,7 +31,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ jobId }) => {
     }, []);
 
     useEffect(() => {
-        let interval: any;
+        let timeoutId: any;
+        let pollCount = 0;
+        // Initialize mermaid only once
         mermaid.initialize({ startOnLoad: true });
 
         const checkStatus = async () => {
@@ -46,22 +48,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ jobId }) => {
                         const readme = res.file_tree.find(f => f.path.toLowerCase() === 'readme.md');
                         if (readme) setSelectedFile(readme.path);
                     }
-                    clearInterval(interval);
                     setTimeout(() => mermaid.contentLoaded(), 500);
                 } else if (job.status === 'failed') {
                     setError(job.error || 'Job failed');
-                    clearInterval(interval);
+                } else {
+                    // Job is still processing - schedule next check with exponential backoff
+                    pollCount++;
+                    // Exponential backoff: 2s, 3s, 5s, 8s, max 10s
+                    const nextDelay = Math.min(2000 + pollCount * 1000, 10000);
+                    timeoutId = setTimeout(checkStatus, nextDelay);
                 }
             } catch (err: any) {
                 setError(err.message);
-                clearInterval(interval);
             }
         };
 
         checkStatus();
-        interval = setInterval(checkStatus, 2000);
 
-        return () => clearInterval(interval);
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+        };
     }, [jobId]);
 
     if (error) {
