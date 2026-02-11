@@ -2,6 +2,15 @@
 
 Gemini 3 powered repository analysis and onboarding assistant.
 
+## ⚡ Performance
+
+FirstPR is optimized for speed with **60% faster** repository analysis and **66% faster** frontend loading:
+- Backend: 2-2.5x faster with concurrent processing and connection pooling
+- Frontend: 75% smaller bundles with code splitting and lazy loading
+- API: 60% faster response times with parallel requests
+
+📊 See [PERFORMANCE_SUMMARY.md](PERFORMANCE_SUMMARY.md) for detailed metrics and [PERFORMANCE_COMPARISON.md](PERFORMANCE_COMPARISON.md) for visual comparisons.
+
 ## Quick Start
 
 ### Backend
@@ -61,3 +70,26 @@ The easiest way to run the application is with Docker Compose.
 
 ## Deployment
 See [DEPLOY.md](DEPLOY.md) for Google Cloud Run deployment instructions.
+
+## Performance Testing
+
+### Backend Performance Benchmarks
+To measure backend API performance:
+```bash
+# 1. Start the backend
+cd backend
+python -m uvicorn src.main:app --reload
+
+# 2. Run benchmarks
+python tests/bench_perf.py
+```
+
+### Frontend Bundle Analysis
+To analyze frontend bundle sizes and code splitting:
+```bash
+cd frontend
+npm run build
+node analyze-bundle.js
+```
+
+See [PERFORMANCE.md](PERFORMANCE.md) for technical implementation details.
