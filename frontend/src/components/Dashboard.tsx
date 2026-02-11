@@ -22,12 +22,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ jobId }) => {
     const [viewMode, setViewMode] = useState<'overview' | 'file'>('overview');
 
     const handleFileSelect = useCallback((path: string) => {
-        // Only show file viewer for actual files, not folders
-        const file = result?.file_tree?.find((f: any) => f.path === path);
-        if (file && file.type === 'tree') return; // Don't preview folders
         setSelectedFile(path);
         setViewMode('file');
-    }, [result]);
+    }, []);
 
     const handleBackToOverview = useCallback(() => {
         setViewMode('overview');
