@@ -7,7 +7,7 @@ interface IssueItemProps {
     onClick: () => void;
 }
 
-export const IssueItem: React.FC<IssueItemProps> = ({ issue, isSelected, onClick }) => {
+const IssueItemInner: React.FC<IssueItemProps> = ({ issue, isSelected, onClick }) => {
     return (
         <div
             onClick={onClick}
@@ -35,3 +35,5 @@ export const IssueItem: React.FC<IssueItemProps> = ({ issue, isSelected, onClick
         </div>
     );
 };
+
+export const IssueItem = React.memo(IssueItemInner);
