@@ -11,7 +11,7 @@ from typing import Any
 # Constants
 MAX_CHUNK_SIZE = 4000  # characters
 CHUNK_OVERLAP = 400  # characters for context continuity
-MAX_TOKENS_ESTIMATE = 990_000  # Available tokens for chunk content
+MAX_TOKENS_ESTIMATE = 2_970_000  # Available tokens for chunk content (3x budget)
 
 
 def estimate_tokens(text: str) -> int:
