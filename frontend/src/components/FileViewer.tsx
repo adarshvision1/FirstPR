@@ -3,7 +3,6 @@ import { getFileContent, explainFile } from '../api/client';
 import { Loader2, Bot, ArrowLeft, AlertCircle, Copy, Check } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import DOMPurify from 'dompurify';
 import ReactMarkdown from 'react-markdown';
 
 interface FileViewerProps {
@@ -186,7 +185,7 @@ export const FileViewer: React.FC<FileViewerProps> = ({ repo, path, onBack }) =>
                                                 }
                                             }}
                                         >
-                                            {DOMPurify.sanitize(explanationContent)}
+                                            {explanationContent}
                                         </ReactMarkdown>
                                     </div>
                                 )}
