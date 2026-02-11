@@ -2,25 +2,6 @@
 
 Gemini 3 powered repository analysis and onboarding assistant.
 
-## Features
-
-- **Repository Analysis**: AI-powered analysis of GitHub repositories with detailed insights
-- **Two-Step LLM Pipeline**: Advanced comprehensive explanation system using meta-prompt generation
-- **Contributor Onboarding**: Structured guides for new open-source contributors
-- **Interactive Chat**: Ask questions about repositories and get instant answers
-- **File-Level Explanations**: AI-generated explanations for any file in a repository
-- **Activity Analysis**: Track repository activity, health, and contributor patterns
-- **Issue & PR Intelligence**: Smart recommendations for first-time contributors
-
-## Documentation
-
-- **[CONTRIBUTOR_ONBOARDING_GUIDE.md](./CONTRIBUTOR_ONBOARDING_GUIDE.md)**: Comprehensive guide explaining the two-step LLM pipeline for repository explanation, including:
-  - Data collection & preparation strategies
-  - Chunking rules and token budgeting
-  - Meta-prompt generation techniques
-  - Detailed sections for project understanding
-  - Actionable starter tasks for new contributors
-
 ## Quick Start
 
 ### Backend
@@ -63,43 +44,8 @@ Use the CLI to test analysis directly:
 ## Testing
 To run backend tests:
 ```bash
-# Run all tests
-cd backend
-python -m pytest tests/ -v
-
-# Run specific test file
-python -m pytest tests/test_chunking.py -v
-
-# Run with coverage
-python -m pytest tests/ --cov=src --cov-report=term-missing
-```
-
-On Windows:
-```bash
 $env:GOOGLE_API_KEY="test"; .\backend\.venv\Scripts\python.exe -m pytest backend/tests/test_github_client.py
 ```
-
-## API Endpoints
-
-### Standard Analysis
-- `POST /api/analyze` - Start repository analysis (async)
-- `GET /api/analyze/{job_id}/status` - Check analysis status
-- `GET /api/analyze/{job_id}/result` - Get analysis results
-
-### Comprehensive Explanation (Two-Step Pipeline)
-- `POST /api/repos/{owner}/{repo}/explain-comprehensive` - Generate comprehensive onboarding guide using advanced two-step LLM pipeline
-
-### Repository Information
-- `GET /api/repos/{owner}/{repo}/readme` - Fetch README
-- `GET /api/repos/{owner}/{repo}/tree` - Get file tree
-- `GET /api/repos/{owner}/{repo}/contents/{path}` - Get file content
-- `GET /api/repos/{owner}/{repo}/activity-status` - Get activity metrics
-- `GET /api/repos/{owner}/{repo}/issues` - Get issues with rankings
-- `GET /api/repos/{owner}/{repo}/pull-requests` - Get PRs with analysis
-
-### AI Services
-- `POST /api/chat` - Chat about repositories
-- `POST /api/explain-file` - Get AI explanation of a specific file
 
 ## Docker Quick Start (Recommended)
 The easiest way to run the application is with Docker Compose.
