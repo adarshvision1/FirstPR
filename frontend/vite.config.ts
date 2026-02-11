@@ -10,6 +10,8 @@ export default defineConfig({
         manualChunks: {
           'vendor-react': ['react', 'react-dom'],
           'vendor-ui': ['lucide-react', 'framer-motion'],
+          'vendor-markdown': ['react-markdown', 'react-syntax-highlighter'],
+          'vendor-mermaid': ['mermaid'],
         },
       },
     },

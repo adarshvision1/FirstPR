@@ -5,7 +5,7 @@ interface PullRequestItemProps {
     pr: PullRequest;
 }
 
-export const PullRequestItem: React.FC<PullRequestItemProps> = ({ pr }) => {
+const PullRequestItemInner: React.FC<PullRequestItemProps> = ({ pr }) => {
     return (
         <a
             href={pr.html_url}
@@ -33,3 +33,5 @@ export const PullRequestItem: React.FC<PullRequestItemProps> = ({ pr }) => {
         </a>
     );
 };
+
+export const PullRequestItem = React.memo(PullRequestItemInner);

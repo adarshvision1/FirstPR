@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { File, Folder } from 'lucide-react';
 
 
@@ -11,7 +11,7 @@ interface FileExplorerProps {
 
 // Basic flat-to-tree for now, assuming paths are full paths
 
-const FileItem = ({ file, depth, isSelected, onSelect }: { file: any, depth: number, isSelected: boolean, onSelect: () => void }) => {
+const FileItem = React.memo(({ file, depth, isSelected, onSelect }: { file: any, depth: number, isSelected: boolean, onSelect: () => void }) => {
     const isFolder = file.type === 'tree';
     const filename = file.path.split('/').pop();
     const style = { paddingLeft: `${depth * 16 + 12}px` };
@@ -24,22 +24,31 @@ const FileItem = ({ file, depth, isSelected, onSelect }: { file: any, depth: num
                 }`}
             style={style}
             onClick={onSelect}
+            role="treeitem"
+            aria-selected={isSelected}
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } }}
         >
-            {isFolder ? <Folder size={14} className="text-[#58a6ff]" /> : <File size={14} className="text-[#8b949e]" />}
+            {isFolder ? <Folder size={14} className="text-[#58a6ff]" aria-hidden="true" /> : <File size={14} className="text-[#8b949e]" aria-hidden="true" />}
             <span className="text-sm truncate">{filename}</span>
         </div>
     );
-};
+});
+
+FileItem.displayName = 'FileItem';
 
 export const FileExplorer: React.FC<FileExplorerProps> = ({ files, onSelectFile, selectedFile }) => {
+    const handleFileSelect = useCallback((path: string) => {
+        onSelectFile(path);
+    }, [onSelectFile]);
     // Simple approach: Render flat list, but visually indent
     // We filter to show only top-level or expanded - but for MVP, let's just show all
     // limited to first 200 or so to avoid perf issues
 
     return (
-        <div className="h-full overflow-y-auto bg-[#0d1117] w-64 flex-shrink-0">
+        <div className="h-full overflow-y-auto bg-[#0d1117] w-64 flex-shrink-0" role="tree" aria-label="File explorer">
             <div className="p-3 border-b border-[#30363d] bg-[#0d1117] sticky top-0 font-semibold text-[#c9d1d9] text-sm flex items-center gap-2">
-                <Folder size={16} className="text-[#8b949e]" /> Files
+                <Folder size={16} className="text-[#8b949e]" aria-hidden="true" /> Files
             </div>
             <div className="py-2">
                 {files.slice(0, 300).map((file) => {
@@ -50,7 +59,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({ files, onSelectFile,
                             file={file}
                             depth={depth}
                             isSelected={selectedFile === file.path}
-                            onSelect={() => onSelectFile(file.path)}
+                            onSelect={() => handleFileSelect(file.path)}
                         />
                     );
                 })}
