@@ -15,7 +15,7 @@ function App() {
   return (
     <div className="min-h-screen bg-[#0d1117] flex flex-col font-sans text-[#c9d1d9]">
       <nav className="fixed w-full z-10 bg-[#161b22]/80 backdrop-blur-md border-b border-[#30363d] px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between transition-all duration-300" role="navigation" aria-label="Main navigation">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={handleReset} role="button" tabIndex={0} aria-label="Go to homepage" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleReset(); }}>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={handleReset} role="button" tabIndex={0} aria-label="Go to homepage" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleReset(); } }}>
           <div className="bg-gradient-to-tr from-indigo-500 to-purple-500 p-2 rounded-lg shadow-lg shadow-indigo-500/20">
             <Sparkles className="text-white h-5 w-5" aria-hidden="true" />
           </div>
