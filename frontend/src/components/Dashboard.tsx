@@ -33,7 +33,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ jobId }) => {
     useEffect(() => {
         let timeoutId: any;
         let pollCount = 0;
-        // Initialize mermaid only once
+        // Initialize mermaid - runs on jobId change to ensure fresh initialization per analysis
         mermaid.initialize({ startOnLoad: true });
 
         const checkStatus = async () => {

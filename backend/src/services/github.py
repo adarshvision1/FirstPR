@@ -185,7 +185,8 @@ class GitHubClient:  # Renamed from GitHubService to match user request spec
     ) -> dict[str, int]:
         """
         Get repository languages with caching.
-        Note: Cache has no TTL. Consider clearing cache periodically for long-running services.
+        Note: Cache has no TTL. Consider clearing cache periodically for long-running services
+        using: github_client.get_repo_languages.cache_clear()
         """
         resp = await self._request(
             "GET", f"{self.base_url}/repos/{owner}/{repo}/languages", token=token
