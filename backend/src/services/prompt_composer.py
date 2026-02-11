@@ -71,15 +71,15 @@ Summarize if:
 ## Output Format
 Return a JSON object with these exact keys:
 {{
-    "system_prompt": "Instructions for the final LLM explaining how to structure the analysis...",
-    "user_prompt_prefix": "Context about the repository...",
+    "system_prompt": "Instructions for the final LLM...",
+    "user_prompt_prefix": "Context about the repository (optional)...",
     "chunks_verbatim": ["chunk_id_1", "chunk_id_2", ...],
     "chunks_summarized": ["chunk_id_3", "chunk_id_4", ...],
     "reasoning": "Brief explanation of your choices"
 }}
 
-The system_prompt should be comprehensive instructions for generating the structured output.
-The user_prompt_prefix should introduce the repository and set context.
+The system_prompt should be comprehensive instructions for structured output.
+The user_prompt_prefix is optional - we'll build the user prompt from chunks.
 Ensure the combined prompt stays within 990,000 tokens (~3.96M characters).
 
 Provide ONLY the JSON output, no additional text.
@@ -262,10 +262,18 @@ class PromptComposerService:
             text = response.text.strip()
 
             # Clean up markdown code blocks if present
+            # Try to extract JSON from code blocks more robustly
             if "```json" in text:
-                text = text.split("```json")[1].split("```")[0].strip()
+                parts = text.split("```json")
+                if len(parts) > 1:
+                    json_part = parts[1].split("```")
+                    if len(json_part) > 0:
+                        text = json_part[0].strip()
             elif "```" in text:
-                text = text.split("```")[1].split("```")[0].strip()
+                parts = text.split("```")
+                if len(parts) >= 3:
+                    # Assume JSON is in the first code block
+                    text = parts[1].strip()
 
             # Parse JSON response
             prompt_specification = json.loads(text)
@@ -393,11 +401,18 @@ Generate a comprehensive onboarding guide following the specified JSON structure
 
             text = response.text.strip()
 
-            # Clean up markdown code blocks
+            # Clean up markdown code blocks more robustly
             if "```json" in text:
-                text = text.split("```json")[1].split("```")[0].strip()
+                parts = text.split("```json")
+                if len(parts) > 1:
+                    json_part = parts[1].split("```")
+                    if len(json_part) > 0:
+                        text = json_part[0].strip()
             elif "```" in text:
-                text = text.split("```")[1].split("```")[0].strip()
+                parts = text.split("```")
+                if len(parts) >= 3:
+                    # Assume JSON is in the first code block
+                    text = parts[1].strip()
 
             # Parse JSON response
             explanation = json.loads(text)
