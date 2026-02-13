@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from brotli_asgi import BrotliMiddleware
 
 from .api.routes import router
 from .core.concurrency import ConcurrencyManager
@@ -36,6 +37,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Compression middleware (Brotli with gzip fallback)
+app.add_middleware(BrotliMiddleware, minimum_size=500, gzip_fallback=True)
 
 # Parse CORS origins from settings
 cors_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",")]

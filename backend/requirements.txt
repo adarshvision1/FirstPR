@@ -1,5 +1,6 @@
 aiofiles==25.1.0
 amqp==5.3.1
+brotli-asgi==1.6.0
 cachetools==6.0.0
 annotated-doc==0.0.4
 annotated-types==0.7.0
