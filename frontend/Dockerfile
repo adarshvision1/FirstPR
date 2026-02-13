@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # Production Stage  
-FROM fholzer/nginx-brotli:latest
+FROM fholzer/nginx-brotli:v1.26.2
 
 # Copy built assets
 COPY --from=build /app/dist /usr/share/nginx/html
